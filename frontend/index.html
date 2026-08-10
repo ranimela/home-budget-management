@@ -182,12 +182,6 @@
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
-        .card-owner {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-        }
-
         .card-spend {
             font-size: 1.4rem;
             font-weight: 700;
@@ -334,7 +328,6 @@
                     <tr>
                         <th>Tx Date</th>
                         <th>Billing Date</th>
-                        <th>User</th>
                         <th>Card Classification</th>
                         <th>Card Digits</th>
                         <th>Vendor</th>
@@ -345,7 +338,7 @@
                 </thead>
                 <tbody id="txTableBody">
                     <tr>
-                        <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                             No transactions consolidated yet. Drop your credit card files in <code>./data/inputs/</code> and click "Consolidate Files Now".
                         </td>
                     </tr>
@@ -384,7 +377,6 @@
                         <span class="card-title">${c.card_name}</span>
                         <span class="card-digits">${c.card_last_4}</span>
                     </div>
-                    <div class="card-owner">👤 Owner: <strong>${c.user_name}</strong> | ${c.institution}</div>
                     <div class="card-spend">₪${c.total_spent_ils.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
                     <div class="card-count">${c.transaction_count} transactions</div>
                 </div>
@@ -400,7 +392,7 @@
                 document.getElementById('txCountBadge').innerText = txs.length + ' transactions';
 
                 if (txs.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">No transactions consolidated yet. Drop your credit card files in <code>./data/inputs/</code> and click "Consolidate Files Now".</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No transactions consolidated yet. Drop your credit card files in <code>./data/inputs/</code> and click "Consolidate Files Now".</td></tr>`;
                     return;
                 }
 
@@ -408,7 +400,6 @@
                     <tr>
                         <td>${t.transaction_date}</td>
                         <td style="color: var(--accent-blue); font-weight: 500;">${t.charge_date}</td>
-                        <td><strong>${t.user_name}</strong></td>
                         <td><span class="tag-card-name">${t.card_name}</span></td>
                         <td><span class="tag-digits">${t.card_last_4}</span></td>
                         <td>${t.vendor}</td>

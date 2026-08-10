@@ -61,7 +61,7 @@ def list_transactions(
             "hash_key": t.hash_key,
             "source_file": t.source_file,
             "institution": t.institution,
-            "card_last_4": f"****{t.card_last_4}",
+            "card_last_4": t.card_last_4,
             "card_name": card_label,
             "user_name": t.user_name or "Unassigned",
             "transaction_date": t.transaction_date.strftime("%d/%m/%y"),
@@ -95,7 +95,6 @@ def get_summary_metrics(session: Session = Depends(get_session)):
         u = t.user_name or "Unassigned"
         c_num = t.card_last_4
         c_label = CARD_DISPLAY_NAMES.get(c_num, card_mappings[c_num].display_name if c_num in card_mappings else f"Card {c_num}")
-        c_masked = f"****{c_num}"
         
         user_totals[u] = user_totals.get(u, 0.0) + t.charged_amount
         category_totals[t.category or "Uncategorized"] = category_totals.get(t.category or "Uncategorized", 0.0) + t.charged_amount
@@ -103,7 +102,7 @@ def get_summary_metrics(session: Session = Depends(get_session)):
         
         if c_num not in card_breakdown:
             card_breakdown[c_num] = {
-                "card_last_4": c_masked,
+                "card_last_4": c_num,
                 "card_name": c_label,
                 "user_name": u,
                 "institution": t.institution,
@@ -137,7 +136,7 @@ def list_cards(session: Session = Depends(get_session)):
         c_label = CARD_DISPLAY_NAMES.get(c.card_last_4, c.display_name)
         res.append({
             "id": c.id,
-            "card_last_4": f"****{c.card_last_4}",
+            "card_last_4": c.card_last_4,
             "raw_last_4": c.card_last_4,
             "institution": c.institution,
             "owner_name": c.owner_name,
