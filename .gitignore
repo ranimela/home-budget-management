@@ -1,0 +1,22 @@
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+dist/
+build/
+
+# Private Financial Statements & Database
+data/*.db
+data/*.sqlite
+data/inputs/*.xlsx
+data/inputs/*.xls
+data/inputs/*.csv
+data/outputs/*.xlsx
+
+# System & Logs
+*.log
+.DS_Store

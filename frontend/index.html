@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Budget Manager | Local & Private</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --accent-blue: #38bdf8;
+            --accent-emerald: #10b981;
+            --accent-purple: #a855f7;
+            --accent-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-emerald));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        button.btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+        }
+
+        button.btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+        }
+
+        .card h3 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .card .val {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .cards-breakdown-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-item {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .card-item:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .card-digits {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--accent-amber);
+            background: rgba(245, 158, 11, 0.15);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .card-owner {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-spend {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .card-count {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .folder-banner {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(16, 185, 129, 0.1));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 1.25rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .folder-path {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            color: var(--accent-blue);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.8rem 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--panel-border);
+            font-size: 0.9rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tag-card-name {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .tag-digits {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--accent-amber);
+            background: rgba(245, 158, 11, 0.15);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            💰 Home Budget Manager
+            <span class="badge">🔒 100% Local & Private</span>
+        </div>
+        <div class="actions-bar">
+            <button class="btn-secondary" onclick="triggerScan()">🔄 Scan Inputs Folder</button>
+            <button onclick="exportExcel()">📊 Export Master Excel</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="folder-banner">
+            <div>
+                <strong>📥 Credit Card Drop Location:</strong>
+                <div style="margin-top:0.25rem; color: var(--text-muted);">
+                    Place your Max, Isracard, Cal, or Bank Excel/CSV files in: <span class="folder-path" id="inputFolderPath">c:\Users\rmelamed\Projects\home-budget-management\data\inputs</span>
+                </div>
+            </div>
+            <button onclick="triggerScan()" style="white-space: nowrap;">Consolidate Files Now</button>
+        </div>
+
+        <div class="grid-stats">
+            <div class="card">
+                <h3>Total Clean Expense (ILS)</h3>
+                <div class="val" id="valTotalSpent">₪0.00</div>
+            </div>
+            <div class="card">
+                <h3>Total Transactions</h3>
+                <div class="val" id="valTotalCount">0</div>
+            </div>
+            <div class="card">
+                <h3>Mapped Family Cards</h3>
+                <div class="val" id="valMappedCards">0</div>
+            </div>
+        </div>
+
+        <!-- Card Classification Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="section-title">
+                <span>💳 Credit Card Classifications</span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Configured Mappings</span>
+            </div>
+            <div class="cards-breakdown-grid" id="cardsBreakdownGrid">
+                <!-- Card Items rendered dynamically -->
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span>Recent Transactions & Classifications</span>
+                <span id="txCountBadge" style="font-size: 0.85rem; color: var(--text-muted);">0 items</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tx Date</th>
+                        <th>Billing Date</th>
+                        <th>User</th>
+                        <th>Card Classification</th>
+                        <th>Card Digits</th>
+                        <th>Vendor</th>
+                        <th>Category</th>
+                        <th>Charged Amount</th>
+                        <th>Installment</th>
+                    </tr>
+                </thead>
+                <tbody id="txTableBody">
+                    <tr>
+                        <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            No transactions consolidated yet. Drop your credit card files in <code>./data/inputs/</code> and click "Consolidate Files Now".
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                const res = await fetch('/api/summary');
+                const data = await res.json();
+                
+                document.getElementById('valTotalSpent').innerText = '₪' + data.total_spent_ils.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('valTotalCount').innerText = data.total_transactions;
+                document.getElementById('valMappedCards').innerText = data.cards_mapped_count;
+
+                renderCardBreakdown(data.card_breakdown || []);
+                loadTransactions();
+            } catch(e) {
+                console.error("Error loading dashboard", e);
+            }
+        }
+
+        function renderCardBreakdown(cards) {
+            const grid = document.getElementById('cardsBreakdownGrid');
+            if (cards.length === 0) {
+                grid.innerHTML = '<div style="color: var(--text-muted);">No cards mapped yet.</div>';
+                return;
+            }
+
+            grid.innerHTML = cards.map(c => `
+                <div class="card-item">
+                    <div class="card-header">
+                        <span class="card-title">${c.card_name}</span>
+                        <span class="card-digits">${c.card_last_4}</span>
+                    </div>
+                    <div class="card-owner">👤 Owner: <strong>${c.user_name}</strong> | ${c.institution}</div>
+                    <div class="card-spend">₪${c.total_spent_ils.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                    <div class="card-count">${c.transaction_count} transactions</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadTransactions() {
+            try {
+                const res = await fetch('/api/transactions');
+                const txs = await res.json();
+                
+                const tbody = document.getElementById('txTableBody');
+                document.getElementById('txCountBadge').innerText = txs.length + ' transactions';
+
+                if (txs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">No transactions consolidated yet. Drop your credit card files in <code>./data/inputs/</code> and click "Consolidate Files Now".</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = txs.map(t => `
+                    <tr>
+                        <td>${t.transaction_date}</td>
+                        <td style="color: var(--accent-blue); font-weight: 500;">${t.charge_date}</td>
+                        <td><strong>${t.user_name}</strong></td>
+                        <td><span class="tag-card-name">${t.card_name}</span></td>
+                        <td><span class="tag-digits">${t.card_last_4}</span></td>
+                        <td>${t.vendor}</td>
+                        <td>${t.category}</td>
+                        <td style="font-weight:700;">₪${t.charged_amount.toFixed(2)}</td>
+                        <td>${t.total_installments > 1 ? t.current_installment + '/' + t.total_installments : '1/1'}</td>
+                    </tr>
+                `).join('');
+            } catch(e) {
+                console.error("Error loading transactions", e);
+            }
+        }
+
+        async function triggerScan() {
+            const btn = event.target;
+            btn.innerText = 'Scanning...';
+            try {
+                const res = await fetch('/api/scan', { method: 'POST' });
+                const data = await res.json();
+                alert(`Scan Complete!\nConsolidated results: ${data.ingestion_results.length} files processed.`);
+                loadDashboard();
+            } catch(e) {
+                alert('Scan failed: ' + e);
+            } finally {
+                btn.innerText = '🔄 Scan Inputs Folder';
+            }
+        }
+
+        async function exportExcel() {
+            try {
+                const res = await fetch('/api/export');
+                const data = await res.json();
+                alert(`Master Excel Workbook generated successfully at:\n${data.path}`);
+            } catch(e) {
+                alert('Export failed: ' + e);
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>
