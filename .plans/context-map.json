@@ -1,0 +1,241 @@
+{
+  "repository": "home-budget-management",
+  "python_version": ">=3.10",
+  "dependencies": [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "sqlmodel>=0.0.16",
+    "pandas>=2.2.0",
+    "openpyxl>=3.1.2",
+    "xlrd>=2.0.1",
+    "pydantic>=2.6.0",
+    "python-multipart>=0.0.9",
+    "pytest"
+  ],
+  "models": [
+    {
+      "class": "Transaction",
+      "path": "app/db/models.py",
+      "fields": {
+        "id": "Optional[int]",
+        "hash_key": "str",
+        "source_file": "str",
+        "institution": "str",
+        "card_last_4": "str",
+        "user_name": "str",
+        "transaction_date": "date",
+        "charge_date": "Optional[date]",
+        "vendor": "str",
+        "original_amount": "float",
+        "original_currency": "str",
+        "charged_amount": "float",
+        "charged_currency": "str",
+        "category": "str",
+        "subcategory": "Optional[str]",
+        "current_installment": "int",
+        "total_installments": "int",
+        "notes": "Optional[str]",
+        "created_at": "datetime"
+      }
+    },
+    {
+      "class": "CardMapping",
+      "path": "app/db/models.py",
+      "fields": {
+        "id": "Optional[int]",
+        "card_last_4": "str",
+        "institution": "str",
+        "owner_name": "str",
+        "display_name": "str"
+      }
+    },
+    {
+      "class": "CategoryRule",
+      "path": "app/db/models.py",
+      "fields": {
+        "id": "Optional[int]",
+        "pattern": "str",
+        "category": "str"
+      }
+    },
+    {
+      "class": "IngestionLog",
+      "path": "app/db/models.py",
+      "fields": {
+        "id": "Optional[int]",
+        "filename": "str",
+        "status": "str",
+        "imported_count": "int",
+        "duplicate_count": "int",
+        "message": "str",
+        "processed_at": "datetime"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "module": "app.config",
+      "path": "app/config.py",
+      "exported_symbols": [
+        "BASE_DIR: Path",
+        "DATA_DIR: Path",
+        "INPUTS_DIR: Path",
+        "OUTPUTS_DIR: Path",
+        "DB_PATH: Path",
+        "MASTER_EXCEL_PATH: Path"
+      ]
+    },
+    {
+      "module": "app.db.database",
+      "path": "app/db/database.py",
+      "exported_symbols": [
+        "sqlite_url: str",
+        "engine: Engine",
+        "init_db() -> None",
+        "get_session() -> Generator[Session, None, None]"
+      ]
+    },
+    {
+      "module": "app.db.models",
+      "path": "app/db/models.py",
+      "exported_symbols": [
+        "Transaction",
+        "CardMapping",
+        "CategoryRule",
+        "IngestionLog"
+      ]
+    },
+    {
+      "module": "app.core.dedup",
+      "path": "app/core/dedup.py",
+      "exported_symbols": [
+        "generate_transaction_hash(transaction_date: date, charged_amount: float, vendor: str, card_last_4: str, current_installment: int = 1, total_installments: int = 1, voucher: Optional[str] = None) -> str"
+      ]
+    },
+    {
+      "module": "app.core.categories",
+      "path": "app/core/categories.py",
+      "exported_symbols": [
+        "categorize_transaction(vendor: str, session=None) -> str",
+        "categorize_vendor(vendor: str) -> Tuple[str, Optional[str]]"
+      ]
+    },
+    {
+      "module": "app.core.projections",
+      "path": "app/core/projections.py",
+      "exported_symbols": [
+        "calculate_monthly_projections(months_ahead: int = 12) -> List[Dict[str, Any]]"
+      ]
+    },
+    {
+      "module": "app.ingestion.parsers.israeli_cards",
+      "path": "app/ingestion/parsers/israeli_cards.py",
+      "exported_symbols": [
+        "IsraeliCardStatementParser.parse_file(file_path: Path) -> Tuple[str, str, List[Dict[str, Any]]]",
+        "IsraeliCardStatementParser.parse_statement_file(file_path: Path) -> Tuple[str, str, List[Dict[str, Any]]]",
+        "IsraeliCardStatementParser._detect_currency(val_str: str) -> str",
+        "IsraeliCardStatementParser._find_exact_col(columns: List[str], candidates: List[str], exclude: Optional[List[str]]) -> Optional[str]",
+        "IsraeliCardStatementParser._parse_number(val: Any) -> float",
+        "IsraeliCardStatementParser._parse_date(val_str: str) -> date",
+        "StatementParser"
+      ]
+    },
+    {
+      "module": "app.ingestion.parsers.bank_statements",
+      "path": "app/ingestion/parsers/bank_statements.py",
+      "exported_symbols": [
+        "BankStatementParser.parse_bank_file(file_path: Path) -> Tuple[str, str, List[Dict[str, Any]]]",
+        "BankStatementParser._find_col(columns: List[str], candidates: List[str]) -> Optional[str]",
+        "BankStatementParser._parse_number(val: Any) -> float",
+        "BankStatementParser._parse_date(val_str: str) -> date"
+      ]
+    },
+    {
+      "module": "app.ingestion.scanner",
+      "path": "app/ingestion/scanner.py",
+      "exported_symbols": [
+        "scan_and_ingest_inputs() -> list[dict]"
+      ]
+    },
+    {
+      "module": "app.export.excel_generator",
+      "path": "app/export/excel_generator.py",
+      "exported_symbols": [
+        "CARD_DISPLAY_NAMES: dict",
+        "generate_master_excel() -> str",
+        "_write_styled_df(ws, df, header_fill, header_font, data_font, border) -> None"
+      ]
+    },
+    {
+      "module": "app.export.vendor_list",
+      "path": "app/export/vendor_list.py",
+      "exported_symbols": [
+        "INPUT_VENDOR_MAPPING_PATH: Path",
+        "DROPBOX_MAPPING_PATH: Path",
+        "OUTPUT_MAPPING_PATH: Path",
+        "get_active_mapping_path() -> Path",
+        "generate_vendor_category_file(overwrite: bool = False) -> str",
+        "apply_vendor_category_file() -> int"
+      ]
+    },
+    {
+      "module": "app.api.routes",
+      "path": "app/api/routes.py",
+      "exported_symbols": [
+        "router: APIRouter",
+        "POST /api/scan -> trigger_scan()",
+        "POST /api/upload -> upload_statement(file: UploadFile)",
+        "GET /api/transactions -> list_transactions(month, user, category, session)",
+        "GET /api/summary -> get_summary_metrics(session)",
+        "GET /api/analytics -> get_analytics_data(session)",
+        "GET /api/cards -> list_cards(session)",
+        "POST /api/cards -> create_or_update_card(card: CardMapping, session)",
+        "GET /api/projections -> get_projections()",
+        "GET /api/export -> export_excel()",
+        "GET /api/vendors/export -> export_vendor_list()",
+        "POST /api/vendors/apply -> apply_vendor_categories()"
+      ]
+    },
+    {
+      "module": "app.main",
+      "path": "app/main.py",
+      "exported_symbols": [
+        "app: FastAPI",
+        "on_startup() -> None",
+        "read_root() -> FileResponse | dict"
+      ]
+    },
+    {
+      "module": "audit",
+      "path": "audit.py",
+      "exported_symbols": [
+        "Audits & syncs SQLite database transactions with raw statement vendor categories"
+      ]
+    },
+    {
+      "module": "migrate",
+      "path": "migrate.py",
+      "exported_symbols": [
+        "migrate() -> None"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "path": "tests/test_parsers.py",
+      "test_cases": [
+        "test_transaction_hash_deduplication",
+        "test_excel_generation"
+      ]
+    }
+  ],
+  "frontend": {
+    "path": "frontend/index.html",
+    "offline_library": "frontend/chart.min.js",
+    "charts_rendered": [
+      "Monthly Spending Trend (Line)",
+      "Total Spend per Category (Bar)",
+      "Category Spending MoM (Grouped Bar)"
+    ]
+  }
+}
