@@ -500,11 +500,11 @@
 
             <!-- Subcategories & Top Vendors Grid -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-                <!-- Subcategories Breakdown -->
+                <!-- Subcategories Breakdown (Pie Chart) -->
                 <div class="card" style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem;">
-                    <h3 style="font-size: 0.9rem; color: var(--accent-emerald); margin-bottom: 0.75rem;">📂 Subcategory Distribution</h3>
-                    <div id="modalSubcategoriesList" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto;">
-                        <!-- Rendered dynamically -->
+                    <h3 style="font-size: 0.9rem; color: var(--accent-emerald); margin-bottom: 0.75rem;">🥧 Subcategory Breakdown</h3>
+                    <div class="mini-chart-container" style="height: 220px;">
+                        <canvas id="modalSubcategoryPieChart"></canvas>
                     </div>
                 </div>
 
@@ -814,18 +814,32 @@
                 document.getElementById('modalTxCount').innerText = data.transaction_count + ' transactions';
                 currentModalTxData = data.transactions || [];
 
-                // Render Subcategories List
-                const subDiv = document.getElementById('modalSubcategoriesList');
-                if (!data.subcategories || data.subcategories.length === 0) {
-                    subDiv.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">General</div>';
-                } else {
-                    subDiv.innerHTML = data.subcategories.map(s => `
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.4rem; background: rgba(255,255,255,0.03); border-radius: 6px;">
-                            <span>📂 ${s.subcategory}</span>
-                            <span style="font-weight: 700; color: var(--accent-emerald);">₪${s.total_ils.toFixed(2)} (${s.count})</span>
-                        </div>
-                    `).join('');
-                }
+                // Render Subcategories Pie Chart
+                const subcats = data.subcategories || [];
+                const pieColors = ['#38bdf8', '#10b981', '#a855f7', '#f59e0b', '#f43f5e', '#06b6d4', '#ec4899', '#84cc16'];
+
+                createOrUpdateChart('modalSubcategoryPieChart', {
+                    type: 'pie',
+                    data: {
+                        labels: subcats.map(s => s.subcategory),
+                        datasets: [{
+                            data: subcats.map(s => s.total_ils),
+                            backgroundColor: pieColors.slice(0, subcats.length),
+                            borderWidth: 1,
+                            borderColor: 'rgba(30, 41, 59, 0.8)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#f8fafc', font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
 
                 // Render Top Vendors List
                 const venDiv = document.getElementById('modalTopVendorsList');
