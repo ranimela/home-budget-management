@@ -132,26 +132,25 @@ def get_summary_metrics(session: Session = Depends(get_session)):
 
 @router.get("/analytics")
 def get_analytics_data(session: Session = Depends(get_session)):
-    """Returns dataset strictly for the 3 user-selected charts (Monthly Trend, Category Bar, Category MoM)."""
+    """Returns dataset for user requested charts:
+    1. Overall Monthly Spending Trend (Line Chart)
+    2. Category Breakdown comparing Past Two Months (Grouped Bar Chart)
+    3. Monthly trend graph for EVERY single category (Interactive Category Selector)
+    """
     txs = session.exec(select(Transaction)).all()
     
     monthly_trend = defaultdict(float)
     category_totals = defaultdict(float)
-    category_mom = defaultdict(lambda: defaultdict(float))
+    category_by_month = defaultdict(lambda: defaultdict(float))
 
     for t in txs:
         m_label = (t.charge_date or t.transaction_date).strftime("%m/%y")
         cat = t.category or "Uncategorized"
         amt = t.charged_amount
 
-        # 1. Monthly Spending Trend
         monthly_trend[m_label] += amt
-        
-        # 2. Total Spend per Category
         category_totals[cat] += amt
-        
-        # 3. Category Spending Month-over-Month
-        category_mom[m_label][cat] += amt
+        category_by_month[cat][m_label] += amt
 
     sorted_months = sorted(monthly_trend.keys(), key=lambda x: datetime.strptime(x, "%m/%y") if "/" in x else x)
 
@@ -161,34 +160,36 @@ def get_analytics_data(session: Session = Depends(get_session)):
         "totals": [round(monthly_trend[m], 2) for m in sorted_months]
     }
 
-    # 2. Total Spend per Category Bar Data (Sorted descending)
-    sorted_cats = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)
-    category_data = {
-        "labels": [c[0] for c in sorted_cats],
-        "totals": [round(c[1], 2) for c in sorted_cats]
+    # 2. Category Breakdown for Past Two Months
+    sorted_cats = [c[0] for c in sorted(category_totals.items(), key=lambda x: x[1], reverse=True)]
+    past_two_months = sorted_months[-2:] if len(sorted_months) >= 2 else sorted_months
+    m1_label = past_two_months[0] if len(past_two_months) >= 1 else ""
+    m2_label = past_two_months[1] if len(past_two_months) >= 2 else ""
+
+    category_past_two_months = {
+        "labels": sorted_cats,
+        "month_1_label": m1_label,
+        "month_2_label": m2_label,
+        "month_1_totals": [round(category_by_month[cat][m1_label], 2) for cat in sorted_cats],
+        "month_2_totals": [round(category_by_month[cat][m2_label], 2) for cat in sorted_cats]
     }
 
-    # 3. Category Spending Month-over-Month Grouped Bar Data
-    top_6_categories = [c[0] for c in sorted_cats[:6]]
-    category_mom_datasets = []
-    colors = ['#38bdf8', '#10b981', '#a855f7', '#f59e0b', '#f43f5e', '#64748b']
-    for idx, cat_name in enumerate(top_6_categories):
-        category_mom_datasets.append({
-            "label": cat_name,
-            "data": [round(category_mom[m][cat_name], 2) for m in sorted_months],
-            "backgroundColor": colors[idx % len(colors)]
-        })
+    # 3. Monthly graph for EVERY single category
+    all_categories_monthly = {}
+    for cat in sorted_cats:
+        all_categories_monthly[cat] = [round(category_by_month[cat][m], 2) for m in sorted_months]
 
-    category_mom_data = {
-        "labels": sorted_months,
-        "datasets": category_mom_datasets
+    category_all_monthly_data = {
+        "months": sorted_months,
+        "categories": sorted_cats,
+        "data_by_category": all_categories_monthly
     }
 
     return {
         "status": "success",
         "monthly_trend": monthly_trend_data,
-        "category_distribution": category_data,
-        "category_mom": category_mom_data
+        "category_past_two_months": category_past_two_months,
+        "category_all_monthly": category_all_monthly_data
     }
 
 @router.get("/cards")

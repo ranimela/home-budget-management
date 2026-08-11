@@ -15,6 +15,7 @@
             --accent-emerald: #10b981;
             --accent-purple: #a855f7;
             --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -197,14 +198,27 @@
 
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
             gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .mini-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
             margin-bottom: 2rem;
         }
 
         .chart-container {
             position: relative;
             height: 280px;
+            width: 100%;
+        }
+
+        .mini-chart-container {
+            position: relative;
+            height: 200px;
             width: 100%;
         }
 
@@ -296,32 +310,41 @@
     </header>
 
     <main>
-        <div class="folder-banner">
-            <div>
-                <strong>📥 Credit Card Drop Location:</strong>
-                <div style="margin-top:0.25rem; color: var(--text-muted);">
-                    Place your Max, Isracard, Cal, or Bank Excel/CSV files in: <span class="folder-path" id="inputFolderPath">c:\Users\rmelamed\Projects\home-budget-management\data\inputs</span>
+        <!-- TOP SECTION 1: Financial Analytics Graphs at Top Prominence -->
+        <div class="section-title">
+            <span>📊 Overview Financial Graphs</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Top Prominence</span>
+        </div>
+
+        <div class="charts-grid">
+            <!-- Graph 1: Monthly Spending Trend -->
+            <div class="card">
+                <h3>📈 1. Monthly Spending Trend (ILS)</h3>
+                <div class="chart-container">
+                    <canvas id="chartMonthlyTrend"></canvas>
                 </div>
             </div>
-            <button onclick="triggerScan()" style="white-space: nowrap;">Consolidate Files Now</button>
-        </div>
 
-        <div class="grid-stats">
+            <!-- Graph 2: Category Breakdown for Past Two Months -->
             <div class="card">
-                <h3>Total Clean Expense (ILS)</h3>
-                <div class="val" id="valTotalSpent">₪0.00</div>
-            </div>
-            <div class="card">
-                <h3>Total Transactions</h3>
-                <div class="val" id="valTotalCount">0</div>
-            </div>
-            <div class="card">
-                <h3>Mapped Family Cards</h3>
-                <div class="val" id="valMappedCards">0</div>
+                <h3>🏷️ 2. Category Breakdown (Past Two Months)</h3>
+                <div class="chart-container">
+                    <canvas id="chartCategoryPastTwoMonths"></canvas>
+                </div>
             </div>
         </div>
 
-        <!-- 12-Month Cash Flow & Commitment Projections Section (Top Prominence) -->
+        <!-- TOP SECTION 2: Monthly Graphs for Each Category -->
+        <div class="section-title">
+            <span>📊 Monthly Spend Trend per Category (Individual Graphs)</span>
+            <span style="font-size: 0.85rem; color: var(--accent-blue);" id="categoryGraphCountBadge">Loading...</span>
+        </div>
+
+        <div class="mini-charts-grid" id="individualCategoriesGrid">
+            <!-- Dynamic mini-charts rendered per category -->
+        </div>
+
+        <!-- TOP SECTION 3: 12-Month Cash Flow & Commitment Forecast -->
         <div class="card" style="margin-bottom: 2rem;">
             <div class="section-title">
                 <span>🔮 12-Month Forward Cash Flow & Commitment Forecast</span>
@@ -350,35 +373,28 @@
             </div>
         </div>
 
-        <!-- Analytics Charts Section -->
-        <div class="section-title">
-            <span>📊 Financial Analytics</span>
-            <span style="font-size: 0.85rem; color: var(--text-muted);">Selected 3 Charts</span>
+        <div class="folder-banner">
+            <div>
+                <strong>📥 Credit Card Drop Location:</strong>
+                <div style="margin-top:0.25rem; color: var(--text-muted);">
+                    Place your Max, Isracard, Cal, or Bank Excel/CSV files in: <span class="folder-path" id="inputFolderPath">c:\Users\rmelamed\Projects\home-budget-management\data\inputs</span>
+                </div>
+            </div>
+            <button onclick="triggerScan()" style="white-space: nowrap;">Consolidate Files Now</button>
         </div>
 
-        <div class="charts-grid">
-            <!-- Chart 1: Monthly Spending Trend -->
+        <div class="grid-stats">
             <div class="card">
-                <h3>📈 1. Monthly Spending Trend (ILS)</h3>
-                <div class="chart-container">
-                    <canvas id="chartMonthlyTrend"></canvas>
-                </div>
+                <h3>Total Clean Expense (ILS)</h3>
+                <div class="val" id="valTotalSpent">₪0.00</div>
             </div>
-
-            <!-- Chart 2: Category Expense Breakdown (Bar Chart per Category) -->
             <div class="card">
-                <h3>🏷️ 2. Total Spend per Category (Bar Chart)</h3>
-                <div class="chart-container">
-                    <canvas id="chartCategoryDist"></canvas>
-                </div>
+                <h3>Total Transactions</h3>
+                <div class="val" id="valTotalCount">0</div>
             </div>
-
-            <!-- Chart 3: Category Spending Month-over-Month -->
-            <div class="card" style="grid-column: span 2;">
-                <h3>📊 3. Category Spending Month-over-Month</h3>
-                <div class="chart-container">
-                    <canvas id="chartCategoryMoM"></canvas>
-                </div>
+            <div class="card">
+                <h3>Mapped Family Cards</h3>
+                <div class="val" id="valMappedCards">0</div>
             </div>
         </div>
 
@@ -486,8 +502,8 @@
                 const analytics = await res.json();
                 
                 renderMonthlyTrend(analytics.monthly_trend);
-                renderCategoryDistribution(analytics.category_distribution);
-                renderCategoryMoM(analytics.category_mom);
+                renderCategoryPastTwoMonths(analytics.category_past_two_months);
+                renderIndividualCategoryGraphs(analytics.category_all_monthly);
             } catch(e) {
                 console.error("Error loading analytics", e);
             }
@@ -507,7 +523,7 @@
             }
         }
 
-        // 1. Monthly Spending Trend Line Chart
+        // Graph 1: Monthly Spending Trend Line Chart
         function renderMonthlyTrend(data) {
             if (!data) return;
             createOrUpdateChart('chartMonthlyTrend', {
@@ -537,24 +553,22 @@
             });
         }
 
-        // 2. Category Expense Breakdown (Bar Chart per Category)
-        function renderCategoryDistribution(data) {
+        // Graph 2: Category Breakdown for Past Two Months (Grouped Bar Chart)
+        function renderCategoryPastTwoMonths(data) {
             if (!data) return;
-            createOrUpdateChart('chartCategoryDist', {
+            createOrUpdateChart('chartCategoryPastTwoMonths', {
                 type: 'bar',
                 data: {
                     labels: data.labels,
-                    datasets: [{
-                        label: 'Total Spend (ILS)',
-                        data: data.totals,
-                        backgroundColor: '#38bdf8',
-                        borderRadius: 6
-                    }]
+                    datasets: [
+                        { label: data.month_1_label || 'Month 1', data: data.month_1_totals, backgroundColor: '#38bdf8', borderRadius: 5 },
+                        { label: data.month_2_label || 'Month 2', data: data.month_2_totals, backgroundColor: '#a855f7', borderRadius: 5 }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { legend: { position: 'top', labels: { color: '#f8fafc' } } },
                     scales: {
                         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
                         y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
@@ -563,24 +577,52 @@
             });
         }
 
-        // 3. Category Spending Month-over-Month (Grouped Bar Chart)
-        function renderCategoryMoM(data) {
-            if (!data) return;
-            createOrUpdateChart('chartCategoryMoM', {
-                type: 'bar',
-                data: {
-                    labels: data.labels,
-                    datasets: data.datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } } },
-                    scales: {
-                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+        // Graph 3: Individual Monthly Graph for Every Single Category
+        function renderIndividualCategoryGraphs(data) {
+            if (!data || !data.categories) return;
+            
+            const grid = document.getElementById('individualCategoriesGrid');
+            const badge = document.getElementById('categoryGraphCountBadge');
+            badge.innerText = `${data.categories.length} Categories Mapped`;
+
+            grid.innerHTML = data.categories.map((cat, idx) => `
+                <div class="card" style="padding: 1rem;">
+                    <h3 style="font-size: 0.9rem; color: var(--accent-blue); margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        🏷️ ${cat}
+                    </h3>
+                    <div class="mini-chart-container">
+                        <canvas id="chartCat_${idx}"></canvas>
+                    </div>
+                </div>
+            `).join('');
+
+            const colors = ['#38bdf8', '#10b981', '#a855f7', '#f59e0b', '#f43f5e', '#06b6d4', '#84cc16'];
+
+            data.categories.forEach((cat, idx) => {
+                const catData = data.data_by_category[cat] || [];
+                const color = colors[idx % colors.length];
+                
+                createOrUpdateChart(`chartCat_${idx}`, {
+                    type: 'bar',
+                    data: {
+                        labels: data.months,
+                        datasets: [{
+                            label: cat,
+                            data: catData,
+                            backgroundColor: color,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                        }
                     }
-                }
+                });
             });
         }
 
