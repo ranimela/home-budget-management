@@ -1,7 +1,7 @@
 # Implementation Specification Plan: 12-Month Forward Cash Flow & Commitment Forecasting
 
 **Architectural Role**: Lead Principal Systems Architect (Planner)  
-**Status**: APPROVED via `/grill-me` Interview  
+**Status**: APPROVED via `/grill-me` & Hardened by Chaos Monkey  
 **Target Specification File**: `/.plans/cash_flow_projections.md`
 
 ---
@@ -62,6 +62,26 @@ This feature introduces a **12-Month Forward Cash Flow & Recurring Commitment Fo
 
 ---
 
+## 🐒 Failure Modes & Mitigation (Chaos Monkey Threat Modeling)
+
+1. **Failure Mode 1: Calendar Year Rollover (`Dec 2026 -> Jan 2027`)**
+   - *Threat*: Naïve date incrementing `month + 1` crashes when rolling from month 12 to month 1.
+   - *Mitigation*: Use relative calendar delta math (`relativedelta(months=+i)` or standard Python `date` replacement logic) to guarantee accurate year incrementing across year-end boundaries.
+
+2. **Failure Mode 2: Final Installment Boundary (`Current == Total`)**
+   - *Threat*: Including transactions where `current_installment == total_installments` projects phantom 13th payments into future months.
+   - *Mitigation*: Enforce strict inequality `current_installment < total_installments`. Only remaining unpaid installments $(N = \text{total\_installments} - \text{current\_installment})$ generate future month DTO projections.
+
+3. **Failure Mode 3: Empty / Cold-Start Database**
+   - *Threat*: Invoking `/api/projections/detail` on an unpopulated SQLite database yields division-by-zero or `NoneType` exception when computing 3-month rolling averages.
+   - *Mitigation*: Fall back gracefully to `0.00` baseline spend and empty forecast lists without throwing HTTP 500 errors.
+
+4. **Failure Mode 4: Floating Point Rounding & Sum Discrepancies**
+   - *Threat*: Summing multiple float installments introduces IEEE 754 precision drift (e.g. `₪70.00000000000001`).
+   - *Mitigation*: Apply explicit `round(amount, 2)` at every DTO aggregation boundary.
+
+---
+
 ## Affected Files
 
 - `app/core/projections.py` — Engine calculating 12-month installment commitments and rolling fixed baseline.
@@ -73,7 +93,7 @@ This feature introduces a **12-Month Forward Cash Flow & Recurring Commitment Fo
 
 ## Step-by-Step Micro-Tasks (for Builder Agent)
 
-1. **Micro-Task 1 (Engine)**: Enhance `app/core/projections.py` to calculate exact multi-month installment roll-forward and 3-month rolling baseline for fixed categories.
+1. **Micro-Task 1 (Engine)**: Enhance `app/core/projections.py` to calculate exact multi-month installment roll-forward and 3-month rolling baseline for fixed categories with Chaos Monkey mitigations.
 2. **Micro-Task 2 (API)**: Implement `GET /api/projections/detail` in `app/api/routes.py`.
 3. **Micro-Task 3 (Frontend UI)**: Update `frontend/index.html` with a dedicated **12-Month Forward Commitment Matrix** section featuring collapsible month breakdowns.
 4. **Micro-Task 4 (Verification)**: Add pytest test suite validation in `tests/test_parsers.py`.
@@ -85,6 +105,7 @@ This feature introduces a **12-Month Forward Cash Flow & Recurring Commitment Fo
 ### Automated Tests
 - `python -m pytest` executes 100% clean.
 - Verify installment roll-forward math: a 10-installment item at payment 3/10 projects exactly 7 remaining monthly payments into `M+1` through `M+7`.
+- Verify December to January year rollover math.
 
 ### Manual Verification
 - Access `http://localhost:8000/api/projections/detail` and verify 12 consecutive future months.
