@@ -15,7 +15,6 @@
             --accent-emerald: #10b981;
             --accent-purple: #a855f7;
             --accent-amber: #f59e0b;
-            --accent-rose: #f43f5e;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -198,7 +197,7 @@
 
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
@@ -322,10 +321,10 @@
             </div>
         </div>
 
-        <!-- Analytics Charts Suite Section -->
+        <!-- Analytics Charts Section -->
         <div class="section-title">
-            <span>📊 Financial Analytics & Visual Insights</span>
-            <span style="font-size: 0.85rem; color: var(--text-muted);">Interactive Analysis Suite</span>
+            <span>📊 Financial Analytics</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Selected 3 Charts</span>
         </div>
 
         <div class="charts-grid">
@@ -337,7 +336,7 @@
                 </div>
             </div>
 
-            <!-- Chart 3: Category Expense Breakdown (Bar Chart) -->
+            <!-- Chart 2: Category Expense Breakdown (Bar Chart per Category) -->
             <div class="card">
                 <h3>🏷️ 2. Total Spend per Category (Bar Chart)</h3>
                 <div class="chart-container">
@@ -345,28 +344,41 @@
                 </div>
             </div>
 
-            <!-- Option A: Category Spend Month-over-Month -->
-            <div class="card">
+            <!-- Chart 3: Category Spending Month-over-Month -->
+            <div class="card" style="grid-column: span 2;">
                 <h3>📊 3. Category Spending Month-over-Month</h3>
                 <div class="chart-container">
                     <canvas id="chartCategoryMoM"></canvas>
                 </div>
             </div>
+        </div>
 
-            <!-- Option B: Fixed vs Variable Spend -->
-            <div class="card">
-                <h3>🔒 4. Fixed Recurring Bills vs. Variable Spend</h3>
-                <div class="chart-container">
-                    <canvas id="chartFixedVsVariable"></canvas>
-                </div>
+        <!-- 12-Month Cash Flow & Commitment Projections Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="section-title">
+                <span>🔮 12-Month Forward Cash Flow & Commitment Forecast</span>
+                <span id="projBaselineBadge" style="font-size: 0.85rem; color: var(--accent-emerald);">Fixed Baseline: ₪0.00/mo</span>
             </div>
-
-            <!-- Option D: Day of Month Distribution -->
-            <div class="card" style="grid-column: span 2;">
-                <h3>📅 5. Day-of-Month Spending Distribution (Days 1–31)</h3>
-                <div class="chart-container">
-                    <canvas id="chartDayOfMonth"></canvas>
-                </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Future Month</th>
+                            <th>Locked Installments</th>
+                            <th>Active Items</th>
+                            <th>Fixed Baseline</th>
+                            <th>Total Commitment</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                                Loading 12-month projections...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -424,9 +436,43 @@
 
                 renderCardBreakdown(data.card_breakdown || []);
                 loadAnalytics();
+                loadProjectionsDetail();
                 loadTransactions();
             } catch(e) {
                 console.error("Error loading dashboard", e);
+            }
+        }
+
+        async function loadProjectionsDetail() {
+            try {
+                const res = await fetch('/api/projections/detail');
+                const data = await res.json();
+                if (!data.forecast) return;
+
+                document.getElementById('projBaselineBadge').innerText = 'Fixed Baseline: ₪' + data.fixed_recurring_baseline_monthly_ils.toFixed(2) + '/mo';
+
+                const tbody = document.getElementById('projTableBody');
+                tbody.innerHTML = data.forecast.map((m, idx) => `
+                    <tr>
+                        <td style="font-weight: 700; color: var(--accent-blue);">${m.display_month}</td>
+                        <td style="color: var(--accent-rose); font-weight: 600;">₪${m.locked_installments_ils.toFixed(2)}</td>
+                        <td><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: var(--accent-blue);">${m.active_installments_count} items</span></td>
+                        <td style="color: var(--text-muted);">₪${m.fixed_recurring_baseline_ils.toFixed(2)}</td>
+                        <td style="font-weight: 700; font-size: 1rem;">₪${m.total_projected_commitment_ils.toFixed(2)}</td>
+                        <td>
+                            <details style="cursor: pointer;">
+                                <summary style="font-size: 0.8rem; color: var(--accent-blue);">View Items (${m.installment_items.length})</summary>
+                                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                    ${m.installment_items.map(item => `
+                                        <div>• <strong>${item.vendor}</strong> (${item.card_name}): ₪${item.monthly_amount_ils.toFixed(2)} [${item.installment_payment}]</div>
+                                    `).join('') || '<div>No active installments</div>'}
+                                </div>
+                            </details>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch(e) {
+                console.error("Error loading projections detail", e);
             }
         }
 
@@ -442,8 +488,6 @@
                 renderMonthlyTrend(analytics.monthly_trend);
                 renderCategoryDistribution(analytics.category_distribution);
                 renderCategoryMoM(analytics.category_mom);
-                renderFixedVsVariable(analytics.fixed_vs_variable);
-                renderDayOfMonth(analytics.day_of_month);
             } catch(e) {
                 console.error("Error loading analytics", e);
             }
@@ -493,7 +537,7 @@
             });
         }
 
-        // 3. Category Expense Breakdown (Bar Chart per Category)
+        // 2. Category Expense Breakdown (Bar Chart per Category)
         function renderCategoryDistribution(data) {
             if (!data) return;
             createOrUpdateChart('chartCategoryDist', {
@@ -519,7 +563,7 @@
             });
         }
 
-        // Option A: Category Spending Month-over-Month (Grouped Bar Chart)
+        // 3. Category Spending Month-over-Month (Grouped Bar Chart)
         function renderCategoryMoM(data) {
             if (!data) return;
             createOrUpdateChart('chartCategoryMoM', {
@@ -534,52 +578,6 @@
                     plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } } },
                     scales: {
                         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-        }
-
-        // Option B: Fixed Recurring Bills vs. Variable Spend
-        function renderFixedVsVariable(data) {
-            if (!data) return;
-            createOrUpdateChart('chartFixedVsVariable', {
-                type: 'doughnut',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        data: data.totals,
-                        backgroundColor: ['#f43f5e', '#10b981']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc' } } }
-                }
-            });
-        }
-
-        // Option D: Day-of-Month Spending Distribution (Days 1–31)
-        function renderDayOfMonth(data) {
-            if (!data) return;
-            createOrUpdateChart('chartDayOfMonth', {
-                type: 'bar',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'Total Spend (ILS)',
-                        data: data.totals,
-                        backgroundColor: '#a855f7',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
                         y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
                     }
                 }

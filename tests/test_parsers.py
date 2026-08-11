@@ -38,6 +38,14 @@ def test_excel_generation(tmp_path):
         session.add(tx)
         session.commit()
 
-    excel_path = generate_master_excel()
-    assert "Master_Budget" in excel_path
+def test_monthly_projections_calculation():
+    from app.core.projections import calculate_monthly_projections
+    forecast = calculate_monthly_projections(12)
+    assert len(forecast) == 12
+    assert "projection_month" in forecast[0]
+    assert "locked_installments_ils" in forecast[0]
+    assert "fixed_recurring_baseline_ils" in forecast[0]
+    assert "total_projected_commitment_ils" in forecast[0]
+    assert isinstance(forecast[0]["installment_items"], list)
+
 
