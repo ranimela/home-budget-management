@@ -39,6 +39,32 @@ def build():
         print(" BUILD SUCCESSFUL!")
         print(f" Executable location: {exe_path}")
         print("=" * 60)
+
+        # Deploy to shared Dropbox folder
+        deploy_dir = Path(r"C:\Users\rmelamed\Dropbox\Home Shared\Home Finance\HomeBudgetApp")
+        if deploy_dir.parent.exists():
+            print(f"\n Deploying to shared Dropbox viewing location: {deploy_dir} ...")
+            deploy_dir.mkdir(parents=True, exist_ok=True)
+            import shutil
+            for item in (BASE_DIR / "dist" / "HomeBudgetManager").iterdir():
+                dest = deploy_dir / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                else:
+                    try:
+                        shutil.copy2(item, dest)
+                    except PermissionError:
+                        print(f" Warning: Could not overwrite {dest.name} (file in use). Close app to overwrite.")
+
+            # Copy ongoing working Vendor_Category_Mapping.xlsx
+            working_vendor_file = BASE_DIR / "data" / "inputs" / "Vendor_Category_Mapping.xlsx"
+            if working_vendor_file.exists():
+                shutil.copy2(working_vendor_file, deploy_dir / "Vendor_Category_Mapping.xlsx")
+                print(f" Preserved ongoing working Vendor_Category_Mapping.xlsx to Dropbox!")
+            print("=" * 60)
+            print(f" DEPLOYMENT TO DROPBOX COMPLETE!")
+            print(f" Executable Path: {deploy_dir / 'HomeBudgetManager.exe'}")
+            print("=" * 60)
     else:
         print("\n BUILD FAILED with exit code:", res.returncode)
         sys.exit(res.returncode)

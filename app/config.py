@@ -16,17 +16,27 @@ def get_bundle_dir() -> Path:
 BASE_DIR = get_base_dir()
 BUNDLE_DIR = get_bundle_dir()
 
+def get_inputs_dir() -> Path:
+    """Prioritizes shared Dropbox Credit Cards folder, with dynamic fallback to local data/inputs."""
+    primary_dropbox = Path(r"C:\Users\rmelamed\Dropbox\Home Shared\Home Finance\Credit Cards")
+    if primary_dropbox.exists():
+        return primary_dropbox
+    
+    user_dropbox = Path.home() / "Dropbox" / "Home Shared" / "Home Finance" / "Credit Cards"
+    if user_dropbox.exists():
+        return user_dropbox
+
+    local_inputs = BASE_DIR / "data" / "inputs"
+    local_inputs.mkdir(parents=True, exist_ok=True)
+    return local_inputs
+
 DATA_DIR = BASE_DIR / "data"
-INPUTS_DIR = DATA_DIR / "inputs"
+INPUTS_DIR = get_inputs_dir()
 OUTPUTS_DIR = DATA_DIR / "outputs"
 DB_PATH = DATA_DIR / "budget.db"
 MASTER_EXCEL_PATH = OUTPUTS_DIR / "Master_Budget.xlsx"
 STATIC_DIR = BUNDLE_DIR / "frontend"
 
-# Fallback path check for user's existing Dropbox path
-DROPBOX_INPUTS_PATH = Path(r"C:\Users\rmelamed\Dropbox\Home Shared\Home Finance\Credit Cards")
-
 # Ensure required directories exist
-INPUTS_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
