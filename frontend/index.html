@@ -383,6 +383,19 @@
             <button onclick="triggerScan()" style="white-space: nowrap;">Consolidate Files Now</button>
         </div>
 
+        <!-- Subcategory Notification & Audit Banner -->
+        <div id="subcategoryNoticeBanner" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(244, 63, 94, 0.12)); border: 1px solid rgba(245, 158, 11, 0.4); padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong style="color: var(--accent-amber); font-size: 0.95rem;">⚠️ Subcategory Audit Notification:</strong>
+                <div style="font-size: 0.85rem; color: var(--text-main); margin-top: 0.2rem;">
+                    <span id="subNoticeCount" style="font-weight: 700;">Loading...</span> vendors have a Category assigned but are missing a Subcategory in <code style="color: var(--accent-blue);">Vendor_Category_Mapping.xlsx</code>.
+                </div>
+            </div>
+            <button onclick="toggleSubcategoryAuditModal()" class="btn-secondary" style="border-color: rgba(245, 158, 11, 0.4); color: var(--accent-amber); white-space: nowrap;">
+                🔍 View Missing Vendors
+            </button>
+        </div>
+
         <div class="grid-stats">
             <div class="card">
                 <h3>Total Clean Expense (ILS)</h3>
@@ -438,7 +451,36 @@
         </div>
     </main>
 
-    <!-- Category Drill-Down Deep-Dive Modal -->
+    <!-- Subcategory Audit Modal -->
+    <div id="subAuditModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); z-index: 1000; overflow-y: auto; padding: 2rem 1rem;">
+        <div style="max-width: 800px; margin: 2rem auto; background: rgba(30, 41, 59, 0.95); border: 1px solid var(--panel-border); border-radius: 20px; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--accent-amber);">⚠️ Vendors Missing Subcategory Assignments</h2>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Open <code style="color: var(--accent-blue);">data/inputs/Vendor_Category_Mapping.xlsx</code> and update the <strong>Subcategory</strong> column for these vendors:
+                    </div>
+                </div>
+                <button onclick="toggleSubcategoryAuditModal()" class="btn-secondary" style="padding: 0.5rem 1rem; border-radius: 8px;">✕ Close</button>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vendor Name</th>
+                            <th>Category</th>
+                            <th>Total Spent</th>
+                            <th>Tx Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subAuditTableBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     <div id="categoryModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); z-index: 1000; overflow-y: auto; padding: 2rem 1rem;">
         <div style="max-width: 900px; margin: 2rem auto; background: rgba(30, 41, 59, 0.95); border: 1px solid var(--panel-border); border-radius: 20px; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem;">
@@ -518,10 +560,46 @@
                 renderCardBreakdown(data.card_breakdown || []);
                 loadAnalytics();
                 loadProjectionsDetail();
+                loadSubcategoryAudit();
                 loadTransactions();
             } catch(e) {
                 console.error("Error loading dashboard", e);
             }
+        }
+
+        let missingSubcategoryVendors = [];
+
+        async function loadSubcategoryAudit() {
+            try {
+                const res = await fetch('/api/subcategories/audit');
+                const data = await res.json();
+                if (data.status !== 'success') return;
+
+                const count = data.missing_subcategory_count;
+                document.getElementById('subNoticeCount').innerText = count;
+                missingSubcategoryVendors = data.missing_vendors || [];
+
+                const tbody = document.getElementById('subAuditTableBody');
+                if (missingSubcategoryVendors.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--accent-emerald);">🎉 All vendors have subcategories assigned!</td></tr>';
+                } else {
+                    tbody.innerHTML = missingSubcategoryVendors.map(v => `
+                        <tr>
+                            <td style="font-weight: 600;">${v.vendor_name}</td>
+                            <td><span class="tag-card-name">${v.category}</span></td>
+                            <td style="font-weight: 700;">₪${v.total_spent_ils.toFixed(2)}</td>
+                            <td>${v.transaction_count} txs</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) {
+                console.error("Error loading subcategory audit", e);
+            }
+        }
+
+        function toggleSubcategoryAuditModal() {
+            const modal = document.getElementById('subAuditModal');
+            modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
         }
 
         async function loadProjectionsDetail() {

@@ -328,8 +328,37 @@ def export_vendor_list():
     path = generate_vendor_category_file()
     return {"status": "exported", "path": path}
 
-@router.post("/vendors/apply")
-def apply_vendor_categories():
-    count = apply_vendor_category_file()
-    generate_master_excel()
-    return {"status": "applied", "updated_transactions": count}
+@router.get("/subcategories/audit")
+def get_subcategory_audit():
+    """Audits Vendor_Category_Mapping.xlsx to notify user of vendors missing subcategories."""
+    from app.export.vendor_list import get_active_mapping_path
+    import pandas as pd
+
+    mapping_path = get_active_mapping_path()
+    if not mapping_path.exists():
+        return {"status": "error", "message": "Mapping file not found."}
+
+    df = pd.read_excel(mapping_path)
+    if "Vendor Name" not in df.columns:
+        return {"status": "error", "message": "Invalid schema."}
+
+    missing_df = df[df["Subcategory"].isna() | (df["Subcategory"].astype(str).str.strip() == "") | (df["Subcategory"] == "General")]
+    
+    missing_list = []
+    for idx, row in missing_df.iterrows():
+        missing_list.append({
+            "vendor_name": str(row.get("Vendor Name", "")),
+            "category": str(row.get("Category", "Uncategorized")),
+            "total_spent_ils": round(float(row.get("Total Spent (ILS)", 0.0)), 2),
+            "transaction_count": int(row.get("Transaction Count", 0))
+        })
+
+    missing_list.sort(key=lambda x: x["total_spent_ils"], reverse=True)
+
+    return {
+        "status": "success",
+        "mapping_file_path": str(mapping_path),
+        "total_vendors": len(df),
+        "missing_subcategory_count": len(missing_df),
+        "missing_vendors": missing_list
+    }
