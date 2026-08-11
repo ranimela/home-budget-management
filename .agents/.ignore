@@ -1,0 +1,16 @@
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+.antigravity/
+.agent/
+.cascade/
+*.pb
+*.log
+node_modules/
+.venv/
+venv/
+dist/
+build/

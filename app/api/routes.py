@@ -249,6 +249,75 @@ def get_projections_detail():
         "forecast": forecast
     }
 
+from urllib.parse import unquote
+
+@router.get("/category/detail")
+def get_category_detail(category: str, month: Optional[str] = None, session: Session = Depends(get_session)):
+    """Returns detailed subcategory breakdown, top vendors, and transactions for a specific category."""
+    cat_decoded = unquote(category)
+    query = select(Transaction).where(Transaction.category == cat_decoded)
+    txs = session.exec(query.order_by(Transaction.transaction_date.desc())).all()
+    card_mappings = {m.card_last_4: m.display_name for m in session.exec(select(CardMapping)).all()}
+
+    filtered_txs = []
+    subcat_totals = defaultdict(float)
+    subcat_counts = defaultdict(int)
+    vendor_totals = defaultdict(float)
+    vendor_counts = defaultdict(int)
+    total_spent = 0.0
+
+    for t in txs:
+        m_label = (t.charge_date or t.transaction_date).strftime("%m/%y")
+        if month and month != "all" and m_label != month:
+            continue
+
+        amt = t.charged_amount
+        total_spent += amt
+        sub = t.subcategory or "General"
+        v = t.vendor
+
+        subcat_totals[sub] += amt
+        subcat_counts[sub] += 1
+        vendor_totals[v] += amt
+        vendor_counts[v] += 1
+
+        card_label = CARD_DISPLAY_NAMES.get(t.card_last_4, card_mappings.get(t.card_last_4, f"Card {t.card_last_4}"))
+        filtered_txs.append({
+            "id": t.id,
+            "transaction_date": t.transaction_date.strftime("%d/%m/%y"),
+            "charge_date": (t.charge_date or t.transaction_date).strftime("01/%m/%y"),
+            "card_name": card_label,
+            "card_last_4": t.card_last_4,
+            "user_name": t.user_name or "Unassigned",
+            "vendor": t.vendor,
+            "subcategory": sub,
+            "charged_amount": round(amt, 2),
+            "installment": f"{t.current_installment}/{t.total_installments}" if t.total_installments > 1 else "1/1"
+        })
+
+    sorted_subcats = sorted(subcat_totals.items(), key=lambda x: x[1], reverse=True)
+    subcategories_list = [
+        {"subcategory": s[0], "total_ils": round(s[1], 2), "count": subcat_counts[s[0]]}
+        for s in sorted_subcats
+    ]
+
+    sorted_vendors = sorted(vendor_totals.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_vendors_list = [
+        {"vendor": v[0], "total_ils": round(v[1], 2), "count": vendor_counts[v[0]]}
+        for v in sorted_vendors
+    ]
+
+    return {
+        "status": "success",
+        "category": cat_decoded,
+        "selected_month": month or "all",
+        "total_spent_ils": round(total_spent, 2),
+        "transaction_count": len(filtered_txs),
+        "subcategories": subcategories_list,
+        "top_vendors": top_vendors_list,
+        "transactions": filtered_txs
+    }
+
 @router.get("/export")
 def export_excel():
     path = generate_master_excel()

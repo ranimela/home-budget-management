@@ -48,4 +48,12 @@ def test_monthly_projections_calculation():
     assert "total_projected_commitment_ils" in forecast[0]
     assert isinstance(forecast[0]["installment_items"], list)
 
-
+def test_category_detail_endpoint():
+    from app.api.routes import get_category_detail
+    from app.db.database import get_session
+    session = next(get_session())
+    res = get_category_detail(category="אוכל", month="all", session=session)
+    assert res["status"] == "success"
+    assert "subcategories" in res
+    assert "top_vendors" in res
+    assert "transactions" in res

@@ -438,6 +438,71 @@
         </div>
     </main>
 
+    <!-- Category Drill-Down Deep-Dive Modal -->
+    <div id="categoryModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); z-index: 1000; overflow-y: auto; padding: 2rem 1rem;">
+        <div style="max-width: 900px; margin: 2rem auto; background: rgba(30, 41, 59, 0.95); border: 1px solid var(--panel-border); border-radius: 20px; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem;">
+                <div>
+                    <h2 id="modalCategoryTitle" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue);">Category Deep-Dive</h2>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        <span id="modalTotalSpent" style="font-weight: 700; color: var(--text-main);">₪0.00</span> • <span id="modalTxCount">0 transactions</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <select id="modalMonthSelect" onchange="filterModalMonth()" style="background: rgba(15, 23, 42, 0.8); color: var(--text-main); border: 1px solid var(--panel-border); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer;">
+                        <option value="all">All Months</option>
+                    </select>
+                    <button onclick="closeCategoryModal()" class="btn-secondary" style="padding: 0.5rem 1rem; border-radius: 8px;">✕ Close</button>
+                </div>
+            </div>
+
+            <!-- Subcategories & Top Vendors Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                <!-- Subcategories Breakdown -->
+                <div class="card" style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem;">
+                    <h3 style="font-size: 0.9rem; color: var(--accent-emerald); margin-bottom: 0.75rem;">📂 Subcategory Distribution</h3>
+                    <div id="modalSubcategoriesList" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Top Vendors Breakdown -->
+                <div class="card" style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem;">
+                    <h3 style="font-size: 0.9rem; color: var(--accent-purple); margin-bottom: 0.75rem;">🏆 Top Vendors</h3>
+                    <div id="modalTopVendorsList" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtered Transactions Table -->
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="font-size: 0.9rem; color: var(--accent-amber);">📝 Filtered Transactions</h3>
+                    <input type="text" id="modalTxSearch" onkeyup="searchModalTransactions()" placeholder="Search vendor or amount..." style="background: rgba(30, 41, 59, 0.8); color: var(--text-main); border: 1px solid var(--panel-border); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; width: 220px;">
+                </div>
+                <div style="max-height: 320px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Billing</th>
+                                <th>Card</th>
+                                <th>Vendor</th>
+                                <th>Subcategory</th>
+                                <th>Amount</th>
+                                <th>Installment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTxTableBody">
+                            <!-- Rendered dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let chartInstances = {};
 
@@ -583,13 +648,21 @@
             
             const grid = document.getElementById('individualCategoriesGrid');
             const badge = document.getElementById('categoryGraphCountBadge');
-            badge.innerText = `${data.categories.length} Categories Mapped`;
+            badge.innerText = `${data.categories.length} Categories Mapped (Click to Drill-Down)`;
+
+            // Populate Modal Month Select Dropdown options
+            const monthSelect = document.getElementById('modalMonthSelect');
+            monthSelect.innerHTML = '<option value="all">All Months</option>' + 
+                data.months.map(m => `<option value="${m}">${m}</option>`).join('');
 
             grid.innerHTML = data.categories.map((cat, idx) => `
-                <div class="card" style="padding: 1rem;">
-                    <h3 style="font-size: 0.9rem; color: var(--accent-blue); margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        🏷️ ${cat}
-                    </h3>
+                <div class="card" onclick="openCategoryModal('${cat.replace(/'/g, "\\'")}')" style="padding: 1rem; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="font-size: 0.9rem; color: var(--accent-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            🏷️ ${cat}
+                        </h3>
+                        <span style="font-size: 0.75rem; color: var(--accent-emerald);">🔍 Drill-Down</span>
+                    </div>
                     <div class="mini-chart-container">
                         <canvas id="chartCat_${idx}"></canvas>
                     </div>
@@ -624,6 +697,105 @@
                     }
                 });
             });
+        }
+
+        let activeModalCategory = "";
+        let currentModalTxData = [];
+
+        async function openCategoryModal(catName, monthVal = "all") {
+            activeModalCategory = catName;
+            document.getElementById('modalCategoryTitle').innerText = '🏷️ ' + catName + ' Deep-Dive';
+            document.getElementById('categoryModal').style.display = 'block';
+            document.getElementById('modalMonthSelect').value = monthVal;
+            fetchCategoryDetail(catName, monthVal);
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').style.display = 'none';
+        }
+
+        // Close on Escape key or backdrop click
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCategoryModal();
+        });
+        document.getElementById('categoryModal').addEventListener('click', (e) => {
+            if (e.target.id === 'categoryModal') closeCategoryModal();
+        });
+
+        function filterModalMonth() {
+            const mVal = document.getElementById('modalMonthSelect').value;
+            fetchCategoryDetail(activeModalCategory, mVal);
+        }
+
+        async function fetchCategoryDetail(catName, monthVal) {
+            try {
+                const res = await fetch(`/api/category/detail?category=${encodeURIComponent(catName)}&month=${monthVal}`);
+                const data = await res.json();
+                
+                document.getElementById('modalTotalSpent').innerText = '₪' + data.total_spent_ils.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById('modalTxCount').innerText = data.transaction_count + ' transactions';
+                currentModalTxData = data.transactions || [];
+
+                // Render Subcategories List
+                const subDiv = document.getElementById('modalSubcategoriesList');
+                if (!data.subcategories || data.subcategories.length === 0) {
+                    subDiv.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">General</div>';
+                } else {
+                    subDiv.innerHTML = data.subcategories.map(s => `
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.4rem; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                            <span>📂 ${s.subcategory}</span>
+                            <span style="font-weight: 700; color: var(--accent-emerald);">₪${s.total_ils.toFixed(2)} (${s.count})</span>
+                        </div>
+                    `).join('');
+                }
+
+                // Render Top Vendors List
+                const venDiv = document.getElementById('modalTopVendorsList');
+                if (!data.top_vendors || data.top_vendors.length === 0) {
+                    venDiv.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No vendor data</div>';
+                } else {
+                    venDiv.innerHTML = data.top_vendors.map(v => `
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.4rem; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                            <span>🏢 ${v.vendor}</span>
+                            <span style="font-weight: 700; color: var(--accent-purple);">₪${v.total_ils.toFixed(2)} (${v.count})</span>
+                        </div>
+                    `).join('');
+                }
+
+                renderModalTxTable(currentModalTxData);
+            } catch(e) {
+                console.error("Error fetching category detail", e);
+            }
+        }
+
+        function renderModalTxTable(txs) {
+            const tbody = document.getElementById('modalTxTableBody');
+            if (!txs || txs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No transactions match filter</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = txs.map(t => `
+                <tr>
+                    <td style="font-size: 0.8rem;">${t.transaction_date}</td>
+                    <td style="font-size: 0.8rem; color: var(--accent-blue);">${t.charge_date}</td>
+                    <td><span class="tag-card-name" style="font-size: 0.75rem;">${t.card_name}</span></td>
+                    <td style="font-weight: 600;">${t.vendor}</td>
+                    <td style="color: var(--text-muted); font-size: 0.8rem;">${t.subcategory}</td>
+                    <td style="font-weight: 700; color: var(--text-main);">₪${t.charged_amount.toFixed(2)}</td>
+                    <td style="font-size: 0.8rem;">${t.installment}</td>
+                </tr>
+            `).join('');
+        }
+
+        function searchModalTransactions() {
+            const query = document.getElementById('modalTxSearch').value.toLowerCase();
+            const filtered = currentModalTxData.filter(t => 
+                t.vendor.toLowerCase().includes(query) || 
+                t.charged_amount.toString().includes(query) ||
+                t.subcategory.toLowerCase().includes(query)
+            );
+            renderModalTxTable(filtered);
         }
 
         function renderCardBreakdown(cards) {

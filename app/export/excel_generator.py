@@ -90,11 +90,11 @@ def generate_master_excel() -> str:
     proj_data = []
     for p in proj_matrix:
         proj_data.append({
-            "Month": p["month"],
-            "Active Installments Count": p["active_installments_count"],
-            "Installments Commitment (ILS)": p["projected_installments_ils"],
-            "Baseline Category Average (ILS)": p["projected_variable_baseline_ils"],
-            "Total Projected Monthly Spend (ILS)": p["total_projected_spend_ils"]
+            "Month": p.get("display_month", p.get("month", "")),
+            "Active Installments Count": p.get("active_installments_count", 0),
+            "Installments Commitment (ILS)": p.get("locked_installments_ils", p.get("projected_installments_ils", 0.0)),
+            "Fixed Recurring Baseline (ILS)": p.get("fixed_recurring_baseline_ils", p.get("projected_variable_baseline_ils", 0.0)),
+            "Total Projected Monthly Spend (ILS)": p.get("total_projected_commitment_ils", p.get("total_projected_spend_ils", 0.0))
         })
     df_proj = pd.DataFrame(proj_data)
     _write_styled_df(ws_proj, df_proj, header_fill, header_font, data_font, thin_border)
