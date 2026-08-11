@@ -5,7 +5,7 @@ from pathlib import Path
 
 from app.db.database import init_db
 from app.api.routes import router as api_router
-from app.config import INPUTS_DIR, OUTPUTS_DIR
+from app.config import INPUTS_DIR, OUTPUTS_DIR, STATIC_DIR
 
 app = FastAPI(
     title="Home Budget & Expense Manager",
@@ -22,13 +22,12 @@ def on_startup():
 app.include_router(api_router)
 
 # Serve static web frontend if exists
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-if FRONTEND_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/")
 def read_root():
-    index_path = FRONTEND_DIR / "index.html"
+    index_path = STATIC_DIR / "index.html"
     if index_path.exists():
         return FileResponse(index_path)
     return {"message": "Home Budget Backend API active. Place files in ./data/inputs and trigger /api/scan"}
