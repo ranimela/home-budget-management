@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Budget Manager | Local & Private</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -14,6 +15,7 @@
             --accent-emerald: #10b981;
             --accent-purple: #a855f7;
             --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -194,6 +196,19 @@
             margin-top: 0.25rem;
         }
 
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
         .folder-banner {
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(16, 185, 129, 0.1));
             border: 1px solid rgba(56, 189, 248, 0.3);
@@ -307,6 +322,54 @@
             </div>
         </div>
 
+        <!-- Analytics Charts Suite Section -->
+        <div class="section-title">
+            <span>📊 Financial Analytics & Visual Insights</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Selected Analysis Suite</span>
+        </div>
+
+        <div class="charts-grid">
+            <!-- Chart 1: Monthly Spending Trend -->
+            <div class="card">
+                <h3>📈 1. Monthly Spending Trend (ILS)</h3>
+                <div class="chart-container">
+                    <canvas id="chartMonthlyTrend"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Category Expense Breakdown (Bar Chart) -->
+            <div class="card">
+                <h3>🏷️ 2. Total Spend per Category (Bar Chart)</h3>
+                <div class="chart-container">
+                    <canvas id="chartCategoryDist"></canvas>
+                </div>
+            </div>
+
+            <!-- Option A: Category Spend Month-over-Month -->
+            <div class="card">
+                <h3>📊 3. Category Spending Month-over-Month</h3>
+                <div class="chart-container">
+                    <canvas id="chartCategoryMoM"></canvas>
+                </div>
+            </div>
+
+            <!-- Option B: Fixed vs Variable Spend -->
+            <div class="card">
+                <h3>🔒 4. Fixed Recurring Bills vs. Variable Spend</h3>
+                <div class="chart-container">
+                    <canvas id="chartFixedVsVariable"></canvas>
+                </div>
+            </div>
+
+            <!-- Option D: Day of Month Distribution -->
+            <div class="card" style="grid-column: span 2;">
+                <h3>📅 5. Day-of-Month Spending Distribution (Days 1–31)</h3>
+                <div class="chart-container">
+                    <canvas id="chartDayOfMonth"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- Card Classification Section -->
         <div class="card" style="margin-bottom: 2rem;">
             <div class="section-title">
@@ -348,6 +411,8 @@
     </main>
 
     <script>
+        let chartInstances = {};
+
         async function loadDashboard() {
             try {
                 const res = await fetch('/api/summary');
@@ -358,10 +423,152 @@
                 document.getElementById('valMappedCards').innerText = data.cards_mapped_count;
 
                 renderCardBreakdown(data.card_breakdown || []);
+                loadAnalytics();
                 loadTransactions();
             } catch(e) {
                 console.error("Error loading dashboard", e);
             }
+        }
+
+        async function loadAnalytics() {
+            try {
+                const res = await fetch('/api/analytics');
+                const analytics = await res.json();
+                
+                renderMonthlyTrend(analytics.monthly_trend);
+                renderCategoryDistribution(analytics.category_distribution);
+                renderCategoryMoM(analytics.category_mom);
+                renderFixedVsVariable(analytics.fixed_vs_variable);
+                renderDayOfMonth(analytics.day_of_month);
+            } catch(e) {
+                console.error("Error loading analytics", e);
+            }
+        }
+
+        function createOrUpdateChart(canvasId, config) {
+            if (chartInstances[canvasId]) {
+                chartInstances[canvasId].destroy();
+            }
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            chartInstances[canvasId] = new Chart(ctx, config);
+        }
+
+        // 1. Monthly Spending Trend Line Chart
+        function renderMonthlyTrend(data) {
+            createOrUpdateChart('chartMonthlyTrend', {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Monthly Spend (ILS)',
+                        data: data.totals,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // 3. Category Expense Breakdown (Bar Chart per Category)
+        function renderCategoryDistribution(data) {
+            createOrUpdateChart('chartCategoryDist', {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Total Spend (ILS)',
+                        data: data.totals,
+                        backgroundColor: '#38bdf8',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // Option A: Category Spending Month-over-Month (Grouped Bar Chart)
+        function renderCategoryMoM(data) {
+            createOrUpdateChart('chartCategoryMoM', {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // Option B: Fixed Recurring Bills vs. Variable Spend
+        function renderFixedVsVariable(data) {
+            createOrUpdateChart('chartFixedVsVariable', {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.totals,
+                        backgroundColor: ['#f43f5e', '#10b981']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc' } } }
+                }
+            });
+        }
+
+        // Option D: Day-of-Month Spending Distribution (Days 1–31)
+        function renderDayOfMonth(data) {
+            createOrUpdateChart('chartDayOfMonth', {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Total Spend (ILS)',
+                        data: data.totals,
+                        backgroundColor: '#a855f7',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
         }
 
         function renderCardBreakdown(cards) {

@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlmodel import Session, select
 from typing import List, Optional, Dict, Any
 from pathlib import Path
+from collections import defaultdict
+from datetime import datetime
 import shutil
 
 from app.config import INPUTS_DIR, MASTER_EXCEL_PATH
@@ -91,7 +93,7 @@ def get_summary_metrics(session: Session = Depends(get_session)):
     card_breakdown = {}
     
     for t in txs:
-        m = t.transaction_date.strftime("%Y-%m")
+        m = (t.charge_date or t.transaction_date).strftime("01/%m/%y")
         u = t.user_name or "Unassigned"
         c_num = t.card_last_4
         c_label = CARD_DISPLAY_NAMES.get(c_num, card_mappings[c_num].display_name if c_num in card_mappings else f"Card {c_num}")
@@ -126,6 +128,102 @@ def get_summary_metrics(session: Session = Depends(get_session)):
         "cards_mapped_count": len(card_breakdown),
         "card_breakdown": list(card_breakdown.values()),
         "recent_logs": logs
+    }
+
+@router.get("/analytics")
+def get_analytics_data(session: Session = Depends(get_session)):
+    """Returns dataset for 5 target analytics charts (1, 3, A, B, D)."""
+    txs = session.exec(select(Transaction)).all()
+    
+    # Aggregators
+    monthly_trend = defaultdict(float)
+    category_totals = defaultdict(float)
+    category_mom = defaultdict(lambda: defaultdict(float))
+    day_of_month = defaultdict(float)
+    
+    fixed_categories = {"insurance", "education", "utilities", "subscriptions", "standing orders", "ביטוח", "חינוך", "הוראת קבע", "תקשורת"}
+    fixed_spend = 0.0
+    variable_spend = 0.0
+
+    for t in txs:
+        m_label = (t.charge_date or t.transaction_date).strftime("%m/%y")
+        cat = t.category or "Uncategorized"
+        day_num = t.transaction_date.day
+        amt = t.charged_amount
+
+        # 1. Monthly Trend
+        monthly_trend[m_label] += amt
+        
+        # 3. Category Total
+        category_totals[cat] += amt
+        
+        # A. Category Month-over-Month
+        category_mom[m_label][cat] += amt
+        
+        # D. Day of Month
+        day_of_month[day_num] += amt
+
+        # B. Fixed vs Variable
+        cat_lower = cat.lower()
+        v_lower = t.vendor.lower()
+        if any(f in cat_lower or f in v_lower for f in fixed_categories) or t.total_installments > 1:
+            fixed_spend += amt
+        else:
+            variable_spend += amt
+
+    # Chronological sort for months
+    sorted_months = sorted(monthly_trend.keys(), key=lambda x: datetime.strptime(x, "%m/%y") if "/" in x else x)
+
+    # 1. Monthly Trend
+    monthly_trend_data = {
+        "labels": sorted_months,
+        "totals": [round(monthly_trend[m], 2) for m in sorted_months]
+    }
+
+    # 3. Category Distribution (Sorted descending)
+    sorted_cats = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)
+    category_data = {
+        "labels": [c[0] for c in sorted_cats],
+        "totals": [round(c[1], 2) for c in sorted_cats]
+    }
+
+    # Option A: Category Month-over-Month
+    top_6_categories = [c[0] for c in sorted_cats[:6]]
+    category_mom_datasets = []
+    colors = ['#38bdf8', '#10b981', '#a855f7', '#f59e0b', '#f43f5e', '#64748b']
+    for idx, cat_name in enumerate(top_6_categories):
+        category_mom_datasets.append({
+            "label": cat_name,
+            "data": [round(category_mom[m][cat_name], 2) for m in sorted_months],
+            "backgroundColor": colors[idx % len(colors)]
+        })
+
+    category_mom_data = {
+        "labels": sorted_months,
+        "datasets": category_mom_datasets
+    }
+
+    # Option B: Fixed vs Variable Spend
+    fixed_vs_variable_data = {
+        "labels": ["Fixed & Installment Debits", "Variable Lifestyle Spend"],
+        "totals": [round(fixed_spend, 2), round(variable_spend, 2)]
+    }
+
+    # Option D: Day of Month Distribution (Days 1 to 31)
+    day_labels = [f"Day {d}" for d in range(1, 32)]
+    day_totals = [round(day_of_month[d], 2) for d in range(1, 32)]
+    day_of_month_data = {
+        "labels": day_labels,
+        "totals": day_totals
+    }
+
+    return {
+        "status": "success",
+        "monthly_trend": monthly_trend_data,
+        "category_distribution": category_data,
+        "category_mom": category_mom_data,
+        "fixed_vs_variable": fixed_vs_variable_data,
+        "day_of_month": day_of_month_data
     }
 
 @router.get("/cards")
