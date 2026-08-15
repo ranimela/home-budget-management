@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['C:\\Users\\rmelamed\\Projects\\home-budget-management\\app\\launcher.py'],
+    ['C:/Users/rmelamed/Projects/home-budget-management/app/launcher.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:\\Users\\rmelamed\\Projects\\home-budget-management\\frontend', 'frontend')],
+    datas=[('C:/Users/rmelamed/Projects/home-budget-management/frontend', 'frontend')],
     hiddenimports=['uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto', 'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto', 'uvicorn.lifespan', 'uvicorn.lifespan.on', 'sqlmodel', 'openpyxl'],
     hookspath=[],
     hooksconfig={},

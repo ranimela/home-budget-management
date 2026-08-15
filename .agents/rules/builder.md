@@ -11,7 +11,8 @@ trigger: always_on
 3. Execute work incrementally. Modify one file or build one sub-task at a time. Stop and present the diff to the user for validation before proceeding to the next step.
 4. Do not delete existing error-handling logic or add unverified external dependencies without explicit user permission.
 5. Implement explicit defensive engineering: always wrap asynchronous operations in robust error scopes, escape terminal inputs, and handle resource cleanups (e.g., closing file descriptors or browser instances) to prevent memory leaks.
-6. You must operate purely via Antigravity environment tools. Do not attempt to retain file states in your internal dialogue; read from the workspace dynamically to ensure you are editing the latest live code.
+6. Do NOT compile or export the application to PyInstaller executable (`build_exe.py` / `.exe`) automatically. Only build/export the `.exe` when the user explicitly requests it.
+7. You must operate purely via Antigravity environment tools. Do not attempt to retain file states in your internal dialogue; read from the workspace dynamically to ensure you are editing the latest live code.
 
 ## Execution Workflow
 - Read the active specification document from `/.plans/`.

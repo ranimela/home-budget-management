@@ -6,16 +6,19 @@ from app.config import OUTPUTS_DIR, INPUTS_DIR, BASE_DIR
 from app.db.database import engine
 from app.db.models import Transaction
 
-# Primary User Vendor Mapping File
+ROOT_VENDOR_MAPPING_PATH = BASE_DIR / "Vendor_Category_Mapping.xlsx"
 INPUT_VENDOR_MAPPING_PATH = BASE_DIR / "data" / "inputs" / "Vendor_Category_Mapping.xlsx"
 DROPBOX_MAPPING_PATH = INPUTS_DIR / "Vendor_Category_Mapping.xlsx"
 OUTPUT_MAPPING_PATH = OUTPUTS_DIR / "Vendor_Category_Mapping.xlsx"
 
 def get_active_mapping_path():
+    """Prioritizes user's Vendor_Category_Mapping.xlsx from data/inputs or statement folder."""
     if INPUT_VENDOR_MAPPING_PATH.exists():
         return INPUT_VENDOR_MAPPING_PATH
     elif DROPBOX_MAPPING_PATH.exists():
         return DROPBOX_MAPPING_PATH
+    elif ROOT_VENDOR_MAPPING_PATH.exists():
+        return ROOT_VENDOR_MAPPING_PATH
     return OUTPUT_MAPPING_PATH
 
 def generate_vendor_category_file(overwrite: bool = False) -> str:

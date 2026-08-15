@@ -299,9 +299,10 @@
 <body>
 
     <header>
-        <div class="logo">
-            💰 Home Budget Manager
+        <div class="logo" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <span>💰 Home Budget Manager</span>
             <span class="badge">🔒 100% Local & Private</span>
+            <span class="badge" id="headerPeriodBadge" style="background: rgba(168, 85, 247, 0.2); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.4); font-size: 0.85rem; font-weight: 600;">🗓️ Expense Period: Loading...</span>
         </div>
         <div class="actions-bar">
             <button class="btn-secondary" onclick="triggerScan()">🔄 Scan Inputs Folder</button>
@@ -310,25 +311,64 @@
     </header>
 
     <main>
+        <!-- CREDIT CARD & MONTH FILTER BAR -->
+        <div class="card" style="margin-bottom: 2rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)); border: 1px solid rgba(56, 189, 248, 0.3);">
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Row 1: Credit Card Filter -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.05rem; font-weight: 700; color: var(--accent-blue);">💳 Filter by Credit Card:</span>
+                    </div>
+                    <div id="cardFilterContainer" style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--accent-emerald);">
+                            <input type="checkbox" id="chkAllCards" checked onchange="toggleAllCardFilters(this.checked)" style="accent-color: var(--accent-emerald); transform: scale(1.2); cursor: pointer;">
+                            All Cards
+                        </label>
+                        <div id="individualCardCheckboxes" style="display: inline-flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <!-- Card checkboxes rendered dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 0.25rem 0;"></div>
+
+                <!-- Row 2: Month Filter -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.05rem; font-weight: 700; color: var(--accent-purple);">📅 Filter by Month:</span>
+                    </div>
+                    <div id="monthFilterContainer" style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--accent-emerald);">
+                            <input type="checkbox" id="chkAllMonths" checked onchange="toggleAllMonthFilters(this.checked)" style="accent-color: var(--accent-emerald); transform: scale(1.2); cursor: pointer;">
+                            All Months
+                        </label>
+                        <div id="individualMonthCheckboxes" style="display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                            <!-- Month checkboxes rendered dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- TOP SECTION 1: Financial Analytics Graphs at Top Prominence -->
         <div class="section-title">
             <span>📊 Overview Financial Graphs</span>
-            <span style="font-size: 0.85rem; color: var(--text-muted);">Top Prominence</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Full-Width Expanded View</span>
         </div>
 
-        <div class="charts-grid">
-            <!-- Graph 1: Monthly Spending Trend -->
-            <div class="card">
+        <div class="charts-grid-full" style="display: flex; flex-direction: column; gap: 2rem; margin-bottom: 2rem;">
+            <!-- Graph 1: Monthly Spending Trend (Full Width Expanded) -->
+            <div class="card" style="width: 100%;">
                 <h3>📈 1. Monthly Spending Trend (ILS)</h3>
-                <div class="chart-container">
+                <div class="chart-container" style="height: 340px;">
                     <canvas id="chartMonthlyTrend"></canvas>
                 </div>
             </div>
 
-            <!-- Graph 2: Category Breakdown for Past Two Months -->
-            <div class="card">
-                <h3>🏷️ 2. Category Breakdown (Past Two Months)</h3>
-                <div class="chart-container">
+            <!-- Graph 2: Category Multi-Month Comparison (Full Width Expanded) -->
+            <div class="card" style="width: 100%;">
+                <h3>🏷️ 2. Category Multi-Month Comparison</h3>
+                <div class="chart-container" style="height: 360px;">
                     <canvas id="chartCategoryPastTwoMonths"></canvas>
                 </div>
             </div>
@@ -383,16 +423,16 @@
             <button onclick="triggerScan()" style="white-space: nowrap;">Consolidate Files Now</button>
         </div>
 
-        <!-- Subcategory Notification & Audit Banner -->
-        <div id="subcategoryNoticeBanner" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(244, 63, 94, 0.12)); border: 1px solid rgba(245, 158, 11, 0.4); padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <!-- Uncategorized Vendors Warning Alert Banner -->
+        <div id="uncategorizedNoticeBanner" style="display: none; background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(245, 158, 11, 0.15)); border: 1px solid rgba(244, 63, 94, 0.5); padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <strong style="color: var(--accent-amber); font-size: 0.95rem;">⚠️ Subcategory Audit Notification:</strong>
+                <strong style="color: var(--accent-rose); font-size: 0.95rem;">🚨 Uncategorized Vendors Warning:</strong>
                 <div style="font-size: 0.85rem; color: var(--text-main); margin-top: 0.2rem;">
-                    <span id="subNoticeCount" style="font-weight: 700;">Loading...</span> vendors have a Category assigned but are missing a Subcategory in <code style="color: var(--accent-blue);">Vendor_Category_Mapping.xlsx</code>.
+                    <span id="uncatNoticeCount" style="font-weight: 700;">0</span> vendors (spanning <span id="uncatNoticeTxCount" style="font-weight: 700;">0</span> transactions) are marked as <strong>Uncategorized</strong>.
                 </div>
             </div>
-            <button onclick="toggleSubcategoryAuditModal()" class="btn-secondary" style="border-color: rgba(245, 158, 11, 0.4); color: var(--accent-amber); white-space: nowrap;">
-                🔍 View Missing Vendors
+            <button onclick="toggleUncategorizedModal()" class="btn-secondary" style="border-color: rgba(244, 63, 94, 0.5); color: var(--accent-rose); white-space: nowrap;">
+                ⚠️ Review Uncategorized Vendors
             </button>
         </div>
 
@@ -451,7 +491,36 @@
         </div>
     </main>
 
-    <!-- Subcategory Audit Modal -->
+    <!-- Uncategorized Vendors Review Modal -->
+    <div id="uncatModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); z-index: 1000; overflow-y: auto; padding: 2rem 1rem;">
+        <div style="max-width: 800px; margin: 2rem auto; background: rgba(30, 41, 59, 0.95); border: 1px solid var(--panel-border); border-radius: 20px; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--accent-rose);">🚨 Uncategorized Vendors Review</h2>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Add categories for these merchants in <code style="color: var(--accent-blue);">Vendor_Category_Mapping.xlsx</code> in your project folder:
+                    </div>
+                </div>
+                <button onclick="toggleUncategorizedModal()" class="btn-secondary" style="padding: 0.5rem 1rem; border-radius: 8px;">✕ Close</button>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Merchant Name</th>
+                            <th>Sample Date</th>
+                            <th>Total Spent</th>
+                            <th>Tx Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="uncatTableBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     <div id="subAuditModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); z-index: 1000; overflow-y: auto; padding: 2rem 1rem;">
         <div style="max-width: 800px; margin: 2rem auto; background: rgba(30, 41, 59, 0.95); border: 1px solid var(--panel-border); border-radius: 20px; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem;">
@@ -547,12 +616,25 @@
 
     <script>
         let chartInstances = {};
+        let allCardsList = [];
+        let allMonthsList = [];
+        let selectedCardDigits = new Set();
+        let selectedMonths = new Set();
+        let rawTransactionsList = [];
+        let rawAnalyticsResponse = null;
 
         async function loadDashboard() {
             try {
+                const resCards = await fetch('/api/cards');
+                allCardsList = await resCards.json();
+                renderCardFilterCheckboxes();
+
                 const res = await fetch('/api/summary');
                 const data = await res.json();
                 
+                if (data.inputs_dir) {
+                    document.getElementById('inputFolderPath').innerText = data.inputs_dir;
+                }
                 document.getElementById('valTotalSpent').innerText = '₪' + data.total_spent_ils.toLocaleString('en-US', {minimumFractionDigits: 2});
                 document.getElementById('valTotalCount').innerText = data.total_transactions;
                 document.getElementById('valMappedCards').innerText = data.cards_mapped_count;
@@ -561,39 +643,187 @@
                 loadAnalytics();
                 loadProjectionsDetail();
                 loadSubcategoryAudit();
+                loadUncategorizedAudit();
                 loadTransactions();
             } catch(e) {
                 console.error("Error loading dashboard", e);
             }
         }
 
-        let missingSubcategoryVendors = [];
+        function renderCardFilterCheckboxes() {
+            const container = document.getElementById('individualCardCheckboxes');
+            if (!allCardsList || allCardsList.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No card mappings found</span>';
+                return;
+            }
+
+            // Populate selected set with all card digits by default
+            if (selectedCardDigits.size === 0) {
+                allCardsList.forEach(c => selectedCardDigits.add(c.card_last_4));
+            }
+
+            container.innerHTML = allCardsList.map(c => {
+                const checked = selectedCardDigits.has(c.card_last_4) ? 'checked' : '';
+                return `
+                    <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-main); background: rgba(255,255,255,0.04); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                        <input type="checkbox" class="chk-card-filter" value="${c.card_last_4}" ${checked} onchange="onCardFilterChanged(this)" style="accent-color: var(--accent-blue); cursor: pointer;">
+                        <strong>${c.display_name}</strong> <span style="font-family: monospace; color: var(--accent-amber); font-size: 0.8rem;">(${c.card_last_4})</span>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        function renderMonthFilterCheckboxes(months) {
+            allMonthsList = months || [];
+            const container = document.getElementById('individualMonthCheckboxes');
+            if (!allMonthsList || allMonthsList.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No statement months found</span>';
+                return;
+            }
+
+            if (selectedMonths.size === 0) {
+                allMonthsList.forEach(m => selectedMonths.add(m));
+            }
+
+            container.innerHTML = allMonthsList.map(m => {
+                const checked = selectedMonths.has(m) ? 'checked' : '';
+                return `
+                    <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-main); background: rgba(255,255,255,0.04); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                        <input type="checkbox" class="chk-month-filter" value="${m}" ${checked} onchange="onMonthFilterChanged(this)" style="accent-color: var(--accent-purple); cursor: pointer;">
+                        <strong>${m}</strong>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        function toggleAllCardFilters(checked) {
+            selectedCardDigits.clear();
+            if (checked) {
+                allCardsList.forEach(c => selectedCardDigits.add(c.card_last_4));
+            }
+            document.querySelectorAll('.chk-card-filter').forEach(chk => {
+                chk.checked = checked;
+            });
+            applyCardFiltersToDashboard();
+        }
+
+        function toggleAllMonthFilters(checked) {
+            selectedMonths.clear();
+            if (checked) {
+                allMonthsList.forEach(m => selectedMonths.add(m));
+            }
+            document.querySelectorAll('.chk-month-filter').forEach(chk => {
+                chk.checked = checked;
+            });
+            applyCardFiltersToDashboard();
+        }
+
+        function onCardFilterChanged(chk) {
+            if (chk.checked) {
+                selectedCardDigits.add(chk.value);
+            } else {
+                selectedCardDigits.delete(chk.value);
+            }
+            
+            const chkAll = document.getElementById('chkAllCards');
+            if (selectedCardDigits.size === allCardsList.length) {
+                chkAll.checked = true;
+                chkAll.indeterminate = false;
+            } else if (selectedCardDigits.size === 0) {
+                chkAll.checked = false;
+                chkAll.indeterminate = false;
+            } else {
+                chkAll.checked = false;
+                chkAll.indeterminate = true;
+            }
+
+            applyCardFiltersToDashboard();
+        }
+
+        function onMonthFilterChanged(chk) {
+            if (chk.checked) {
+                selectedMonths.add(chk.value);
+            } else {
+                selectedMonths.delete(chk.value);
+            }
+            
+            const chkAll = document.getElementById('chkAllMonths');
+            if (selectedMonths.size === allMonthsList.length) {
+                chkAll.checked = true;
+                chkAll.indeterminate = false;
+            } else if (selectedMonths.size === 0) {
+                chkAll.checked = false;
+                chkAll.indeterminate = false;
+            } else {
+                chkAll.checked = false;
+                chkAll.indeterminate = true;
+            }
+
+            applyCardFiltersToDashboard();
+        }
+
+        function applyCardFiltersToDashboard() {
+            // 1. Filter Transactions Table & Recompute Stats by Card AND Month
+            const filteredTx = rawTransactionsList.filter(t => {
+                let mLabel = t.charge_date || t.transaction_date;
+                if (mLabel && mLabel.length === 8 && mLabel.includes('/')) {
+                    // Convert "01/03/25" to "03/25"
+                    const parts = mLabel.split('/');
+                    mLabel = parts[1] + '/' + parts[2];
+                }
+                return selectedCardDigits.has(t.card_last_4) && selectedMonths.has(mLabel);
+            });
+            renderFilteredTransactionsTable(filteredTx);
+
+            // Update Total Stats
+            const totalSpent = filteredTx.reduce((acc, t) => acc + t.charged_amount, 0);
+            document.getElementById('valTotalSpent').innerText = '₪' + totalSpent.toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('valTotalCount').innerText = filteredTx.length;
+
+            // 2. Filter Analytics Graphs
+            if (rawAnalyticsResponse) {
+                renderFilteredAnalytics(rawAnalyticsResponse, selectedCardDigits, selectedMonths);
+            }
+        }
+
+        async function loadUncategorizedAudit() {
+            try {
+                const res = await fetch('/api/vendors/uncategorized');
+                const data = await res.json();
+                
+                const banner = document.getElementById('uncategorizedNoticeBanner');
+                if (data.count > 0) {
+                    banner.style.display = 'flex';
+                    document.getElementById('uncategorizedNoticeCountText').innerText = data.count + ' unmapped vendor(s)';
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch(e) {
+                console.error("Error loading uncategorized audit", e);
+            }
+        }
+
+        function toggleUncategorizedModal() {
+            const modal = document.getElementById('uncatModal');
+            modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+        }
 
         async function loadSubcategoryAudit() {
             try {
                 const res = await fetch('/api/subcategories/audit');
                 const data = await res.json();
-                if (data.status !== 'success') return;
-
-                const count = data.missing_subcategory_count;
-                document.getElementById('subNoticeCount').innerText = count;
-                missingSubcategoryVendors = data.missing_vendors || [];
-
-                const tbody = document.getElementById('subAuditTableBody');
-                if (missingSubcategoryVendors.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--accent-emerald);">🎉 All vendors have subcategories assigned!</td></tr>';
+                
+                const banner = document.getElementById('missingSubcategoriesNoticeBanner');
+                const countBadge = document.getElementById('missingSubcategoriesCountText');
+                
+                if (data.missing_subcategories_count > 0) {
+                    banner.style.display = 'flex';
+                    countBadge.innerText = data.missing_subcategories_count + ' vendor(s)';
                 } else {
-                    tbody.innerHTML = missingSubcategoryVendors.map(v => `
-                        <tr>
-                            <td style="font-weight: 600;">${v.vendor_name}</td>
-                            <td><span class="tag-card-name">${v.category}</span></td>
-                            <td style="font-weight: 700;">₪${v.total_spent_ils.toFixed(2)}</td>
-                            <td>${v.transaction_count} txs</td>
-                        </tr>
-                    `).join('');
+                    banner.style.display = 'none';
                 }
             } catch(e) {
-                console.error("Error loading subcategory audit", e);
+                console.error("Error checking subcategory audit", e);
             }
         }
 
@@ -606,9 +836,8 @@
             try {
                 const res = await fetch('/api/projections/detail');
                 const data = await res.json();
-                if (!data.forecast) return;
-
-                document.getElementById('projBaselineBadge').innerText = 'Fixed Baseline: ₪' + data.fixed_recurring_baseline_monthly_ils.toFixed(2) + '/mo';
+                
+                document.getElementById('projBaselineBadge').innerText = '₪' + data.fixed_recurring_baseline_monthly_ils.toLocaleString('en-US', {minimumFractionDigits: 2}) + '/mo Baseline';
 
                 const tbody = document.getElementById('projTableBody');
                 tbody.innerHTML = data.forecast.map((m, idx) => `
@@ -642,14 +871,92 @@
                     return;
                 }
                 const res = await fetch('/api/analytics');
-                const analytics = await res.json();
+                rawAnalyticsResponse = await res.json();
                 
-                renderMonthlyTrend(analytics.monthly_trend);
-                renderCategoryPastTwoMonths(analytics.category_past_two_months);
-                renderIndividualCategoryGraphs(analytics.category_all_monthly);
+                const allMonths = rawAnalyticsResponse.monthly_trend ? rawAnalyticsResponse.monthly_trend.labels : [];
+                renderMonthFilterCheckboxes(allMonths);
+
+                renderFilteredAnalytics(rawAnalyticsResponse, selectedCardDigits, selectedMonths);
             } catch(e) {
                 console.error("Error loading analytics", e);
             }
+        }
+
+        function renderFilteredAnalytics(analytics, activeCardsSet, activeMonthsSet) {
+            if (!analytics || !analytics.raw_items) return;
+
+            const items = analytics.raw_items.filter(item => 
+                activeCardsSet.has(item.card_last_4) && activeMonthsSet.has(item.month)
+            );
+
+            const monthlyTrend = {};
+            const catTotals = {};
+            const catByMonth = {};
+
+            items.forEach(item => {
+                const m = item.month;
+                const c = item.category || 'Uncategorized';
+                const amt = item.amount;
+
+                monthlyTrend[m] = (monthlyTrend[m] || 0) + amt;
+                catTotals[c] = (catTotals[c] || 0) + amt;
+                if (!catByMonth[c]) catByMonth[c] = {};
+                catByMonth[c][m] = (catByMonth[c][m] || 0) + amt;
+            });
+
+            const allMonths = analytics.monthly_trend ? analytics.monthly_trend.labels : [];
+            const displayMonths = allMonths.filter(m => activeMonthsSet.has(m));
+
+            const periodBadge = document.getElementById('headerPeriodBadge');
+            if (periodBadge) {
+                if (displayMonths.length === 0) {
+                    periodBadge.innerText = '🗓️ Expense Period: No Months Selected';
+                } else if (displayMonths.length === 1) {
+                    periodBadge.innerText = `🗓️ Expense Period: ${displayMonths[0]}`;
+                } else {
+                    periodBadge.innerText = `🗓️ Expense Period: ${displayMonths[0]} – ${displayMonths[displayMonths.length - 1]} (${displayMonths.length} Months)`;
+                }
+            }
+
+            const filteredMonthlyTrend = {
+                labels: displayMonths,
+                totals: displayMonths.map(m => round2(monthlyTrend[m] || 0))
+            };
+
+            const sortedCats = Object.keys(catTotals).sort((a, b) => catTotals[b] - catTotals[a]);
+
+            const multiMonthComparison = {
+                labels: sortedCats,
+                months: displayMonths,
+                datasets: displayMonths.map((m, idx) => {
+                    const palette = ['#38bdf8', '#a855f7', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#ec4899', '#84cc16'];
+                    return {
+                        label: m,
+                        data: sortedCats.map(c => round2(catByMonth[c] ? (catByMonth[c][m] || 0) : 0)),
+                        backgroundColor: palette[idx % palette.length],
+                        borderRadius: 4
+                    };
+                })
+            };
+
+            const dataByCat = {};
+            sortedCats.forEach(c => {
+                dataByCat[c] = displayMonths.map(m => round2(catByMonth[c] ? (catByMonth[c][m] || 0) : 0));
+            });
+
+            const filteredCatAllMonthly = {
+                months: displayMonths,
+                categories: sortedCats,
+                data_by_category: dataByCat
+            };
+
+            renderMonthlyTrend(filteredMonthlyTrend);
+            renderCategoryMultiMonthComparison(multiMonthComparison);
+            renderIndividualCategoryGraphs(filteredCatAllMonthly);
+        }
+
+        function round2(val) {
+            return Math.round((val + Number.EPSILON) * 100) / 100;
         }
 
         function createOrUpdateChart(canvasId, config) {
@@ -690,28 +997,29 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#94a3b8' } 
+                        }
                     }
                 }
             });
         }
 
-        // Graph 2: Category Breakdown for Past Two Months (Grouped Bar Chart)
-        function renderCategoryPastTwoMonths(data) {
+        // Graph 2: Category Multi-Month Comparison Grouped Bar Chart
+        function renderCategoryMultiMonthComparison(data) {
             if (!data) return;
             createOrUpdateChart('chartCategoryPastTwoMonths', {
                 type: 'bar',
                 data: {
                     labels: data.labels,
-                    datasets: [
-                        { label: data.month_1_label || 'Month 1', data: data.month_1_totals, backgroundColor: '#38bdf8', borderRadius: 5 },
-                        { label: data.month_2_label || 'Month 2', data: data.month_2_totals, backgroundColor: '#a855f7', borderRadius: 5 }
-                    ]
+                    datasets: data.datasets || []
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'top', labels: { color: '#f8fafc' } } },
+                    plugins: { legend: { position: 'bottom', labels: { color: '#f8fafc' } } },
                     scales: {
                         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
                         y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
@@ -733,8 +1041,9 @@
             monthSelect.innerHTML = '<option value="all">All Months</option>' + 
                 data.months.map(m => `<option value="${m}">${m}</option>`).join('');
 
-            grid.innerHTML = data.categories.map((cat, idx) => `
-                <div class="card" onclick="openCategoryModal('${cat.replace(/'/g, "\\'")}')" style="padding: 1rem; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+            grid.innerHTML = data.categories.map((cat, idx) => {
+                return `
+                <div class="card category-card" data-category="${encodeURIComponent(cat)}" style="padding: 1rem; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <h3 style="font-size: 0.9rem; color: var(--accent-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             🏷️ ${cat}
@@ -745,7 +1054,7 @@
                         <canvas id="chartCat_${idx}"></canvas>
                     </div>
                 </div>
-            `).join('');
+            `;}).join('');
 
             const colors = ['#38bdf8', '#10b981', '#a855f7', '#f59e0b', '#f43f5e', '#06b6d4', '#84cc16'];
 
@@ -773,6 +1082,13 @@
                             y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
                         }
                     }
+                });
+            });
+
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const rawCat = decodeURIComponent(card.getAttribute('data-category'));
+                    openCategoryModal(rawCat);
                 });
             });
         }
@@ -807,7 +1123,8 @@
 
         async function fetchCategoryDetail(catName, monthVal) {
             try {
-                const res = await fetch(`/api/category/detail?category=${encodeURIComponent(catName)}&month=${monthVal}`);
+                const cardParam = Array.from(selectedCardDigits).join(',');
+                const res = await fetch(`/api/category/detail?category=${encodeURIComponent(catName)}&month=${monthVal}&cards=${encodeURIComponent(cardParam)}`);
                 const data = await res.json();
                 
                 document.getElementById('modalTotalSpent').innerText = '₪' + data.total_spent_ils.toLocaleString('en-US', {minimumFractionDigits: 2});
@@ -912,31 +1229,36 @@
         async function loadTransactions() {
             try {
                 const res = await fetch('/api/transactions');
-                const txs = await res.json();
+                rawTransactionsList = await res.json();
                 
-                const tbody = document.getElementById('txTableBody');
-                document.getElementById('txCountBadge').innerText = txs.length + ' transactions';
-
-                if (txs.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No transactions consolidated yet. Drop your credit card files in <code>./data/inputs/</code> and click "Consolidate Files Now".</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = txs.map(t => `
-                    <tr>
-                        <td>${t.transaction_date}</td>
-                        <td style="color: var(--accent-blue); font-weight: 500;">${t.charge_date}</td>
-                        <td><span class="tag-card-name">${t.card_name}</span></td>
-                        <td><span class="tag-digits">${t.card_last_4}</span></td>
-                        <td>${t.vendor}</td>
-                        <td>${t.category}</td>
-                        <td style="font-weight:700;">₪${t.charged_amount.toFixed(2)}</td>
-                        <td>${t.total_installments > 1 ? t.current_installment + '/' + t.total_installments : '1/1'}</td>
-                    </tr>
-                `).join('');
+                const filteredTx = rawTransactionsList.filter(t => selectedCardDigits.has(t.card_last_4));
+                renderFilteredTransactionsTable(filteredTx);
             } catch(e) {
                 console.error("Error loading transactions", e);
             }
+        }
+
+        function renderFilteredTransactionsTable(txs) {
+            const tbody = document.getElementById('txTableBody');
+            document.getElementById('txCountBadge').innerText = txs.length + ' transactions';
+
+            if (!txs || txs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No matching transactions found for selected credit card(s).</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = txs.map(t => `
+                <tr>
+                    <td>${t.transaction_date}</td>
+                    <td style="color: var(--accent-blue); font-weight: 500;">${t.charge_date}</td>
+                    <td><span class="tag-card-name">${t.card_name}</span></td>
+                    <td><span class="tag-digits">${t.card_last_4}</span></td>
+                    <td>${t.vendor}</td>
+                    <td>${t.category}</td>
+                    <td style="font-weight:700;">₪${t.charged_amount.toFixed(2)}</td>
+                    <td>${t.total_installments > 1 ? t.current_installment + '/' + t.total_installments : '1/1'}</td>
+                </tr>
+            `).join('');
         }
 
         async function triggerScan() {

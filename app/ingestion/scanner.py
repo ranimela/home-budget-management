@@ -45,18 +45,15 @@ def scan_and_ingest_inputs() -> list[dict]:
                         else:
                             user_name = "Unassigned"
 
-                    stmt_cat = tx_data.get("existing_category")
-                    category = stmt_cat if stmt_cat and stmt_cat.lower() not in ['nan', 'none', 'uncategorized'] else "Uncategorized"
+                    # USER INSTRUCTION: Ignore categories from raw credit card files.
+                    # Default all new transactions to Uncategorized, overridden strictly by Vendor_Category_Mapping.xlsx
+                    category = "Uncategorized"
                     subcategory = None
 
-                    
                     # Check for existing record by hash_key
                     existing = session.exec(select(Transaction).where(Transaction.hash_key == tx_data["hash_key"])).first()
                     if existing:
                         duplicate_count += 1
-                        if stmt_cat and stmt_cat.lower() not in ['nan', 'none', 'uncategorized'] and existing.category != stmt_cat:
-                            existing.category = stmt_cat
-                            session.add(existing)
                         continue
 
                     
@@ -121,6 +118,9 @@ def scan_and_ingest_inputs() -> list[dict]:
                     "error": str(e)
                 })
                 
+    from app.export.vendor_list import apply_vendor_category_file
+    apply_vendor_category_file()
+
     return results
 
 if __name__ == "__main__":

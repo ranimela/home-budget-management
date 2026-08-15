@@ -56,11 +56,25 @@ def build():
                     except PermissionError:
                         print(f" Warning: Could not overwrite {dest.name} (file in use). Close app to overwrite.")
 
-            # Copy ongoing working Vendor_Category_Mapping.xlsx
+            # Copy ongoing working Vendor_Category_Mapping.xlsx to inputs directory
             working_vendor_file = BASE_DIR / "data" / "inputs" / "Vendor_Category_Mapping.xlsx"
             if working_vendor_file.exists():
-                shutil.copy2(working_vendor_file, deploy_dir / "Vendor_Category_Mapping.xlsx")
-                print(f" Preserved ongoing working Vendor_Category_Mapping.xlsx to Dropbox!")
+                shutil.copy2(working_vendor_file, deploy_dir / "data" / "inputs" / "Vendor_Category_Mapping.xlsx")
+                print(" Preserved ongoing working Vendor_Category_Mapping.xlsx in data/inputs!")
+
+            # Copy fully categorized active database to Dropbox
+            src_db = Path(r"C:\dev\db_storage\budget.db")
+            if not src_db.exists():
+                src_db = BASE_DIR / "data" / "budget.db"
+            if src_db.exists():
+                deploy_db = deploy_dir / "data" / "budget.db"
+                deploy_db.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.copy2(src_db, deploy_db)
+                    print(f" Synced fully categorized budget.db database ({src_db.stat().st_size} bytes) to Dropbox!")
+                except PermissionError:
+                    print(" Warning: Could not overwrite budget.db (file locked by running app).")
+
             print("=" * 60)
             print(f" DEPLOYMENT TO DROPBOX COMPLETE!")
             print(f" Executable Path: {deploy_dir / 'HomeBudgetManager.exe'}")

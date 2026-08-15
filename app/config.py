@@ -15,6 +15,7 @@ def get_bundle_dir() -> Path:
 
 BASE_DIR = get_base_dir()
 BUNDLE_DIR = get_bundle_dir()
+APP_VERSION = "1.0.0"
 
 def get_inputs_dir() -> Path:
     """Prioritizes shared Dropbox Credit Cards folder, with dynamic fallback to local data/inputs."""
@@ -33,7 +34,23 @@ def get_inputs_dir() -> Path:
 DATA_DIR = BASE_DIR / "data"
 INPUTS_DIR = get_inputs_dir()
 OUTPUTS_DIR = DATA_DIR / "outputs"
-DB_PATH = DATA_DIR / "budget.db"
+
+def get_db_path() -> Path:
+    """Returns BASE_DIR/data/budget.db when running as frozen .exe in Dropbox, or dev DB in project dev mode."""
+    if getattr(sys, 'frozen', False):
+        local_db = DATA_DIR / "budget.db"
+        local_db.parent.mkdir(parents=True, exist_ok=True)
+        return local_db
+    
+    dev_db = Path(r"C:\dev\db_storage\budget.db")
+    if dev_db.exists():
+        return dev_db
+        
+    local_db = DATA_DIR / "budget.db"
+    local_db.parent.mkdir(parents=True, exist_ok=True)
+    return local_db
+
+DB_PATH = get_db_path()
 MASTER_EXCEL_PATH = OUTPUTS_DIR / "Master_Budget.xlsx"
 STATIC_DIR = BUNDLE_DIR / "frontend"
 

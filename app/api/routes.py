@@ -6,13 +6,18 @@ from collections import defaultdict
 from datetime import datetime
 import shutil
 
-from app.config import INPUTS_DIR, MASTER_EXCEL_PATH
+from app.config import INPUTS_DIR, MASTER_EXCEL_PATH, APP_VERSION
 from app.db.database import get_session
 from app.db.models import Transaction, CardMapping, CategoryRule, IngestionLog
 from app.ingestion.scanner import scan_and_ingest_inputs
 from app.export.excel_generator import generate_master_excel, CARD_DISPLAY_NAMES
 
 router = APIRouter(prefix="/api")
+
+@router.get("/version")
+def get_app_version():
+    """Returns application version information."""
+    return {"status": "success", "version": APP_VERSION}
 
 @router.post("/scan")
 def trigger_scan():
@@ -120,6 +125,7 @@ def get_summary_metrics(session: Session = Depends(get_session)):
     logs = session.exec(select(IngestionLog).order_by(IngestionLog.processed_at.desc()).limit(10)).all()
     
     return {
+        "inputs_dir": str(INPUTS_DIR),
         "total_spent_ils": round(total_spent, 2),
         "total_transactions": total_tx_count,
         "user_totals": user_totals,
@@ -185,8 +191,19 @@ def get_analytics_data(session: Session = Depends(get_session)):
         "data_by_category": all_categories_monthly
     }
 
+    raw_tx_items = []
+    for t in txs:
+        m_label = (t.charge_date or t.transaction_date).strftime("%m/%y")
+        raw_tx_items.append({
+            "card_last_4": t.card_last_4,
+            "category": t.category or "Uncategorized",
+            "month": m_label,
+            "amount": t.charged_amount
+        })
+
     return {
         "status": "success",
+        "raw_items": raw_tx_items,
         "monthly_trend": monthly_trend_data,
         "category_past_two_months": category_past_two_months,
         "category_all_monthly": category_all_monthly_data
@@ -252,12 +269,14 @@ def get_projections_detail():
 from urllib.parse import unquote
 
 @router.get("/category/detail")
-def get_category_detail(category: str, month: Optional[str] = None, session: Session = Depends(get_session)):
+def get_category_detail(category: str, month: Optional[str] = None, cards: Optional[str] = None, session: Session = Depends(get_session)):
     """Returns detailed subcategory breakdown, top vendors, and transactions for a specific category."""
     cat_decoded = unquote(category)
     query = select(Transaction).where(Transaction.category == cat_decoded)
     txs = session.exec(query.order_by(Transaction.transaction_date.desc())).all()
     card_mappings = {m.card_last_4: m.display_name for m in session.exec(select(CardMapping)).all()}
+
+    allowed_cards = set(cards.split(",")) if cards else None
 
     filtered_txs = []
     subcat_totals = defaultdict(float)
@@ -267,6 +286,9 @@ def get_category_detail(category: str, month: Optional[str] = None, session: Ses
     total_spent = 0.0
 
     for t in txs:
+        if allowed_cards and t.card_last_4 not in allowed_cards:
+            continue
+
         m_label = (t.charge_date or t.transaction_date).strftime("%m/%y")
         if month and month != "all" and m_label != month:
             continue
@@ -361,4 +383,33 @@ def get_subcategory_audit():
         "total_vendors": len(df),
         "missing_subcategory_count": len(missing_df),
         "missing_vendors": missing_list
+    }
+
+@router.get("/vendors/uncategorized")
+def get_uncategorized_vendors(session: Session = Depends(get_session)):
+    """Audits database for transactions with category == Uncategorized and alerts the user."""
+    txs = session.exec(select(Transaction).where((Transaction.category == "Uncategorized") | (Transaction.category == None) | (Transaction.category == ""))).all()
+    
+    uncat_vendors = defaultdict(lambda: {"count": 0, "total_spent_ils": 0.0, "sample_date": None})
+    for t in txs:
+        v = t.vendor.strip()
+        uncat_vendors[v]["count"] += 1
+        uncat_vendors[v]["total_spent_ils"] += t.charged_amount
+        uncat_vendors[v]["sample_date"] = t.transaction_date.strftime("%d/%m/%y")
+
+    uncat_list = [
+        {
+            "vendor": k,
+            "count": v["count"],
+            "total_spent_ils": round(v["total_spent_ils"], 2),
+            "sample_date": v["sample_date"]
+        }
+        for k, v in sorted(uncat_vendors.items(), key=lambda x: x[1]["total_spent_ils"], reverse=True)
+    ]
+
+    return {
+        "status": "success",
+        "uncategorized_transaction_count": len(txs),
+        "uncategorized_vendor_count": len(uncat_list),
+        "uncategorized_vendors": uncat_list
     }

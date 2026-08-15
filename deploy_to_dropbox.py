@@ -35,7 +35,6 @@ def deploy():
     working_vendor_file = src_proj / "data" / "inputs" / "Vendor_Category_Mapping.xlsx"
     if working_vendor_file.exists():
         print(f" Preserving ongoing working vendor mapping file: {working_vendor_file.name}")
-        shutil.copy2(working_vendor_file, dest_dir / "Vendor_Category_Mapping.xlsx")
         shutil.copy2(working_vendor_file, dest_inputs / "Vendor_Category_Mapping.xlsx")
 
     # 4. Copy existing budget.db database and outputs
