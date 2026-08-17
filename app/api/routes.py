@@ -191,13 +191,19 @@ def get_analytics_data(session: Session = Depends(get_session)):
         "data_by_category": all_categories_monthly
     }
 
+    card_mappings = {m.card_last_4: m.display_name for m in session.exec(select(CardMapping)).all()}
+
     raw_tx_items = []
     for t in txs:
         m_label = (t.charge_date or t.transaction_date).strftime("%m/%y")
+        day_num = t.transaction_date.day if t.transaction_date else 1
+        card_label = CARD_DISPLAY_NAMES.get(t.card_last_4, card_mappings.get(t.card_last_4, f"Card {t.card_last_4}"))
         raw_tx_items.append({
             "card_last_4": t.card_last_4,
+            "card_name": card_label,
             "category": t.category or "Uncategorized",
             "month": m_label,
+            "day": day_num,
             "amount": t.charged_amount
         })
 

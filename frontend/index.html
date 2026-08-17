@@ -346,6 +346,27 @@
                             <!-- Month checkboxes rendered dynamically -->
                         </div>
                     </div>
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 0.25rem 0;"></div>
+
+                <!-- Row 3: Available Charts Toggle -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.05rem; font-weight: 700; color: var(--accent-emerald);">📊 Visible Charts:</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-main); background: rgba(255,255,255,0.04); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                            <input type="checkbox" id="chkShowChart1" checked onchange="toggleChartVisibility('cardChart1', this.checked)" style="accent-color: var(--accent-blue); cursor: pointer;">
+                            📈 1. Monthly Spending Trend
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-main); background: rgba(255,255,255,0.04); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                            <input type="checkbox" id="chkShowChart2" checked onchange="toggleChartVisibility('cardChart2', this.checked)" style="accent-color: var(--accent-purple); cursor: pointer;">
+                            🏷️ 2. Category Multi-Month Comparison
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-main); background: rgba(255,255,255,0.04); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                            <input type="checkbox" id="chkShowChart3" checked onchange="toggleChartVisibility('cardChart3', this.checked)" style="accent-color: var(--accent-amber); cursor: pointer;">
+                            🚀 3. Intra-Month Cumulative Spending Velocity
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -357,19 +378,30 @@
         </div>
 
         <div class="charts-grid-full" style="display: flex; flex-direction: column; gap: 2rem; margin-bottom: 2rem;">
-            <!-- Graph 1: Monthly Spending Trend (Full Width Expanded) -->
-            <div class="card" style="width: 100%;">
+            <!-- Graph 1: Monthly Spending Trend -->
+            <div class="card" id="cardChart1" style="width: 100%;">
                 <h3>📈 1. Monthly Spending Trend (ILS)</h3>
                 <div class="chart-container" style="height: 340px;">
                     <canvas id="chartMonthlyTrend"></canvas>
                 </div>
             </div>
 
-            <!-- Graph 2: Category Multi-Month Comparison (Full Width Expanded) -->
-            <div class="card" style="width: 100%;">
+            <!-- Graph 2: Category Multi-Month Comparison -->
+            <div class="card" id="cardChart2" style="width: 100%;">
                 <h3>🏷️ 2. Category Multi-Month Comparison</h3>
                 <div class="chart-container" style="height: 360px;">
                     <canvas id="chartCategoryPastTwoMonths"></canvas>
+                </div>
+            </div>
+
+            <!-- Graph 3: Intra-Month Cumulative Spending Velocity -->
+            <div class="card" id="cardChart3" style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h3>🚀 3. Intra-Month Cumulative Spending Velocity (Day 1 - Day 31)</h3>
+                    <span id="velocityNoticeBadge" style="font-size: 0.8rem; color: var(--accent-amber);"></span>
+                </div>
+                <div class="chart-container" style="height: 360px;">
+                    <canvas id="chartVelocityTrend"></canvas>
                 </div>
             </div>
         </div>
@@ -952,7 +984,84 @@
 
             renderMonthlyTrend(filteredMonthlyTrend);
             renderCategoryMultiMonthComparison(multiMonthComparison);
+            renderVelocityTrend(items, displayMonths);
             renderIndividualCategoryGraphs(filteredCatAllMonthly);
+        }
+
+        function toggleChartVisibility(cardId, isVisible) {
+            const cardEl = document.getElementById(cardId);
+            if (cardEl) {
+                cardEl.style.display = isVisible ? 'block' : 'none';
+            }
+        }
+
+        function renderVelocityTrend(items, displayMonths) {
+            const days = Array.from({ length: 31 }, (_, i) => i + 1);
+            const seriesMap = {};
+            const badge = document.getElementById('velocityNoticeBadge');
+
+            items.forEach(item => {
+                const key = `${item.card_name || ('Card ' + item.card_last_4)} - ${item.month}`;
+                if (!seriesMap[key]) {
+                    seriesMap[key] = Array(31).fill(0);
+                }
+                const dayIdx = Math.min(Math.max((item.day || 1) - 1, 0), 30);
+                seriesMap[key][dayIdx] += item.amount;
+            });
+
+            const keys = Object.keys(seriesMap);
+            if (badge) {
+                if (keys.length > 8) {
+                    badge.innerText = `Showing ${keys.length} series curves`;
+                } else {
+                    badge.innerText = `${keys.length} series active`;
+                }
+            }
+
+            const palette = ['#38bdf8', '#a855f7', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#ec4899', '#84cc16', '#eab308', '#6366f1'];
+            const datasets = keys.map((key, idx) => {
+                const dailyAmounts = seriesMap[key];
+                let cum = 0;
+                const cumData = dailyAmounts.map(amt => {
+                    cum += amt;
+                    return round2(cum);
+                });
+
+                const color = palette[idx % palette.length];
+                return {
+                    label: key,
+                    data: cumData,
+                    borderColor: color,
+                    backgroundColor: color,
+                    fill: false,
+                    tension: 0.25,
+                    pointRadius: 3,
+                    pointHoverRadius: 6
+                };
+            });
+
+            createOrUpdateChart('chartVelocityTrend', {
+                type: 'line',
+                data: {
+                    labels: days.map(d => 'Day ' + d),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 10 } } }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#94a3b8' } 
+                        }
+                    }
+                }
+            });
         }
 
         function round2(val) {
