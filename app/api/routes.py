@@ -367,19 +367,32 @@ def get_subcategory_audit():
         return {"status": "error", "message": "Mapping file not found."}
 
     df = pd.read_excel(mapping_path)
-    if "Vendor Name" not in df.columns:
-        return {"status": "error", "message": "Invalid schema."}
+    if df.empty:
+        return {"status": "success", "mapping_file_path": str(mapping_path), "total_vendors": 0, "missing_subcategory_count": 0, "missing_vendors": []}
 
-    missing_df = df[df["Subcategory"].isna() | (df["Subcategory"].astype(str).str.strip() == "") | (df["Subcategory"] == "General")]
-    
+    col_vendor = [c for c in df.columns if 'vendor' in str(c).lower() or 'בית עסק' in str(c).lower() or 'שם' in str(c).lower()][0]
+    col_cat_candidates = [c for c in df.columns if 'category' in str(c).lower() and 'sub' not in str(c).lower() or 'קטגוריה' in str(c).lower() or 'ענף' in str(c).lower()]
+    col_cat = col_cat_candidates[0] if col_cat_candidates else df.columns[1]
+    col_subcat_candidates = [c for c in df.columns if 'sub' in str(c).lower() or 'תת' in str(c).lower()]
+    col_subcat = col_subcat_candidates[0] if col_subcat_candidates else (df.columns[2] if len(df.columns) > 2 else None)
+
+    col_spent_candidates = [c for c in df.columns if 'spent' in str(c).lower() or 'total' in str(c).lower() or 'סכום' in str(c).lower()]
+    col_spent = col_spent_candidates[0] if col_spent_candidates else None
+    col_count_candidates = [c for c in df.columns if 'count' in str(c).lower() or 'כמות' in str(c).lower()]
+    col_count = col_count_candidates[0] if col_count_candidates else None
+
     missing_list = []
-    for idx, row in missing_df.iterrows():
-        missing_list.append({
-            "vendor_name": str(row.get("Vendor Name", "")),
-            "category": str(row.get("Category", "Uncategorized")),
-            "total_spent_ils": round(float(row.get("Total Spent (ILS)", 0.0)), 2),
-            "transaction_count": int(row.get("Transaction Count", 0))
-        })
+    for _, row in df.iterrows():
+        sub_val = str(row[col_subcat]).strip() if col_subcat and pd.notna(row[col_subcat]) else ""
+        if not sub_val or sub_val.lower() in ["nan", "none", "general", ""]:
+            spent_val = float(row[col_spent]) if col_spent and pd.notna(row[col_spent]) else 0.0
+            count_val = int(row[col_count]) if col_count and pd.notna(row[col_count]) else 0
+            missing_list.append({
+                "vendor_name": str(row[col_vendor]).strip(),
+                "category": str(row[col_cat]).strip() if pd.notna(row[col_cat]) else "Uncategorized",
+                "total_spent_ils": round(spent_val, 2),
+                "transaction_count": count_val
+            })
 
     missing_list.sort(key=lambda x: x["total_spent_ils"], reverse=True)
 
@@ -387,7 +400,7 @@ def get_subcategory_audit():
         "status": "success",
         "mapping_file_path": str(mapping_path),
         "total_vendors": len(df),
-        "missing_subcategory_count": len(missing_df),
+        "missing_subcategory_count": len(missing_list),
         "missing_vendors": missing_list
     }
 
