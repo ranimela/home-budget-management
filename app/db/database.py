@@ -35,9 +35,26 @@ def init_db():
                 CardMapping(card_last_4='4591', institution='Leumicard', owner_name='Rani', display_name='Rani Leumicard'),
                 CardMapping(card_last_4='4656', institution='Isracard', owner_name='Yael', display_name='Yael Mastercard'),
                 CardMapping(card_last_4='1123', institution='Max', owner_name='Yael', display_name='Yael Max'),
+                CardMapping(card_last_4='7390', institution='Isracard', owner_name='Yael', display_name='Yael Mastercard 2'),
+                CardMapping(card_last_4='0467', institution='Isracard', owner_name='Yael', display_name='Yael Mastercard Temp'),
             ]
             for c in card_defaults:
                 session.add(c)
+            session.commit()
+        else:
+            # Ensure 7390 and 0467 exist
+            cards_map = {c.card_last_4: c for c in existing_cards}
+            if '7390' not in cards_map:
+                session.add(CardMapping(card_last_4='7390', institution='Isracard', owner_name='Yael', display_name='Yael Mastercard 2'))
+            else:
+                cards_map['7390'].display_name = 'Yael Mastercard 2'
+                session.add(cards_map['7390'])
+                
+            if '0467' not in cards_map:
+                session.add(CardMapping(card_last_4='0467', institution='Isracard', owner_name='Yael', display_name='Yael Mastercard Temp'))
+            else:
+                cards_map['0467'].display_name = 'Yael Mastercard Temp'
+                session.add(cards_map['0467'])
             session.commit()
 
 
