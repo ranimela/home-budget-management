@@ -12,11 +12,11 @@ DROPBOX_MAPPING_PATH = INPUTS_DIR / "Vendor_Category_Mapping.xlsx"
 OUTPUT_MAPPING_PATH = OUTPUTS_DIR / "Vendor_Category_Mapping.xlsx"
 
 def get_active_mapping_path():
-    """Prioritizes user's Vendor_Category_Mapping.xlsx from data/inputs or statement folder."""
-    if INPUT_VENDOR_MAPPING_PATH.exists():
-        return INPUT_VENDOR_MAPPING_PATH
-    elif DROPBOX_MAPPING_PATH.exists():
+    """Prioritizes user's Vendor_Category_Mapping.xlsx from Dropbox statement folder first, then local fallback."""
+    if DROPBOX_MAPPING_PATH.exists():
         return DROPBOX_MAPPING_PATH
+    elif INPUT_VENDOR_MAPPING_PATH.exists():
+        return INPUT_VENDOR_MAPPING_PATH
     elif ROOT_VENDOR_MAPPING_PATH.exists():
         return ROOT_VENDOR_MAPPING_PATH
     return OUTPUT_MAPPING_PATH
