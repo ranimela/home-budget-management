@@ -123,6 +123,7 @@ def get_summary_metrics(session: Session = Depends(get_session)):
         c_info["total_spent_ils"] = round(c_info["total_spent_ils"], 2)
 
     unmapped_cards = [c_num for c_num in card_breakdown if c_num not in card_mappings and c_num not in CARD_DISPLAY_NAMES]
+    logs = session.exec(select(IngestionLog).order_by(IngestionLog.processed_at.desc()).limit(10)).all()
 
     return {
         "inputs_dir": str(INPUTS_DIR),
