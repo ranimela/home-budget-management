@@ -410,20 +410,32 @@ def get_subcategory_audit():
 def get_uncategorized_vendors(session: Session = Depends(get_session)):
     """Audits database for transactions with category == Uncategorized and alerts the user."""
     txs = session.exec(select(Transaction).where((Transaction.category == "Uncategorized") | (Transaction.category == None) | (Transaction.category == ""))).all()
-    
-    uncat_vendors = defaultdict(lambda: {"count": 0, "total_spent_ils": 0.0, "sample_date": None})
+    card_mappings = {m.card_last_4: m.display_name for m in session.exec(select(CardMapping)).all()}
+
+    uncat_vendors = defaultdict(lambda: {"count": 0, "total_spent_ils": 0.0, "transactions": []})
     for t in txs:
         v = t.vendor.strip()
+        c_label = CARD_DISPLAY_NAMES.get(t.card_last_4, card_mappings.get(t.card_last_4, f"Card {t.card_last_4}"))
         uncat_vendors[v]["count"] += 1
         uncat_vendors[v]["total_spent_ils"] += t.charged_amount
-        uncat_vendors[v]["sample_date"] = t.transaction_date.strftime("%d/%m/%y")
+        uncat_vendors[v]["transactions"].append({
+            "date": t.transaction_date.strftime("%d/%m/%y"),
+            "charge_date": t.charge_date.strftime("%d/%m/%y") if t.charge_date else t.transaction_date.strftime("%d/%m/%y"),
+            "card_name": c_label,
+            "card_last_4": t.card_last_4,
+            "source_file": t.source_file,
+            "charged_amount": t.charged_amount
+        })
 
     uncat_list = [
         {
             "vendor": k,
             "count": v["count"],
             "total_spent_ils": round(v["total_spent_ils"], 2),
-            "sample_date": v["sample_date"]
+            "sample_date": v["transactions"][0]["date"] if v["transactions"] else "",
+            "sample_card": v["transactions"][0]["card_name"] if v["transactions"] else "",
+            "sample_file": v["transactions"][0]["source_file"] if v["transactions"] else "",
+            "transactions": v["transactions"]
         }
         for k, v in sorted(uncat_vendors.items(), key=lambda x: x[1]["total_spent_ils"], reverse=True)
     ]
