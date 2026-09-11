@@ -122,8 +122,8 @@ def get_summary_metrics(session: Session = Depends(get_session)):
     for c_info in card_breakdown.values():
         c_info["total_spent_ils"] = round(c_info["total_spent_ils"], 2)
 
-    logs = session.exec(select(IngestionLog).order_by(IngestionLog.processed_at.desc()).limit(10)).all()
-    
+    unmapped_cards = [c_num for c_num in card_breakdown if c_num not in card_mappings and c_num not in CARD_DISPLAY_NAMES]
+
     return {
         "inputs_dir": str(INPUTS_DIR),
         "total_spent_ils": round(total_spent, 2),
@@ -133,6 +133,7 @@ def get_summary_metrics(session: Session = Depends(get_session)):
         "monthly_totals": month_totals,
         "cards_mapped_count": len(card_breakdown),
         "card_breakdown": list(card_breakdown.values()),
+        "unmapped_cards": unmapped_cards,
         "recent_logs": logs
     }
 

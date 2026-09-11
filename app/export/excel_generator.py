@@ -10,7 +10,9 @@ CARD_DISPLAY_NAMES = {
     '9380': 'Rani CAL',
     '4591': 'Rani Leumicard',
     '4656': 'Yael Mastercard',
-    '1123': 'Yael Max'
+    '1123': 'Yael Max',
+    '7390': 'Yael Mastercard',
+    '0467': 'Yael Isracard (0467)'
 }
 
 def generate_master_excel() -> str:

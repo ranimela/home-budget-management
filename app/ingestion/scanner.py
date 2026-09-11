@@ -40,7 +40,7 @@ def scan_and_ingest_inputs() -> list[dict]:
                         folder_name = file_path.parent.name.lower()
                         if "rani" in folder_name or card_4 in ['9380', '4591', '1365', '1527', '1657', '1011', '2004']:
                             user_name = "Rani"
-                        elif "yael" in folder_name or card_4 in ['1123', '4656', '1794', '4906', '3893', '4006', '3623', '8813', '5632']:
+                        elif "yael" in folder_name or card_4 in ['1123', '4656', '1794', '4906', '3893', '4006', '3623', '8813', '5632', '7390', '0467']:
                             user_name = "Yael"
                         else:
                             user_name = "Unassigned"
