@@ -358,6 +358,12 @@ def export_vendor_list():
     path = generate_vendor_category_file()
     return {"status": "exported", "path": path}
 
+@router.get("/vendors/uncategorized/export")
+def export_uncategorized_vendors():
+    from app.export.vendor_list import export_uncategorized_vendors_file
+    path = export_uncategorized_vendors_file()
+    return {"status": "exported", "path": path}
+
 @router.get("/subcategories/audit")
 def get_subcategory_audit():
     """Audits Vendor_Category_Mapping.xlsx to notify user of vendors missing subcategories."""

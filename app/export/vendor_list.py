@@ -162,7 +162,101 @@ def apply_vendor_category_file() -> int:
                     updated_count += 1
         session.commit()
         
-    return updated_count
+def export_uncategorized_vendors_file() -> str:
+    """Exports all currently uncategorized vendors into an Excel template file for user editing."""
+    target_path = OUTPUTS_DIR / "Uncategorized_Vendors.xlsx"
+    
+    with Session(engine) as session:
+        txs = session.exec(select(Transaction).where((Transaction.category == "Uncategorized") | (Transaction.category == None) | (Transaction.category == ""))).all()
+        
+    vendor_stats = {}
+    for t in txs:
+        v = t.vendor.strip()
+        if v not in vendor_stats:
+            vendor_stats[v] = {
+                "vendor": v,
+                "category": "Uncategorized",
+                "subcategory": "",
+                "count": 0,
+                "total_spent_ils": 0.0,
+                "sample_date": t.transaction_date,
+                "cards": set(),
+                "source_files": set()
+            }
+        vendor_stats[v]["count"] += 1
+        vendor_stats[v]["total_spent_ils"] += t.charged_amount
+        if t.card_last_4 and t.card_last_4 != "0000":
+            vendor_stats[v]["cards"].add(t.card_last_4)
+        if t.source_file:
+            vendor_stats[v]["source_files"].add(t.source_file)
+
+    sorted_vendors = sorted(vendor_stats.values(), key=lambda x: x["total_spent_ils"], reverse=True)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Uncategorized Vendors"
+
+    headers = [
+        "Vendor Name",
+        "Category",
+        "Subcategory",
+        "Transaction Count",
+        "Total Spent (ILS)",
+        "Cards / Accounts",
+        "Source File(s)",
+        "Sample Date"
+    ]
+    ws.append(headers)
+
+    header_fill = PatternFill(start_color="991B1B", end_color="991B1B", fill_type="solid")
+    header_font = Font(name="Segoe UI", size=11, bold=True, color="FFFFFF")
+    data_font = Font(name="Segoe UI", size=10)
+    thin_border = Border(
+        left=Side(style='thin', color='E5E7EB'),
+        right=Side(style='thin', color='E5E7EB'),
+        top=Side(style='thin', color='E5E7EB'),
+        bottom=Side(style='thin', color='E5E7EB')
+    )
+
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    for item in sorted_vendors:
+        cards_str = ", ".join([f"Card {c}" for c in sorted(item["cards"])]) if item["cards"] else "N/A"
+        files_str = ", ".join(sorted(item["source_files"])) if item["source_files"] else "N/A"
+
+        ws.append([
+            item["vendor"],
+            item["category"],
+            item["subcategory"],
+            item["count"],
+            round(item["total_spent_ils"], 2),
+            cards_str,
+            files_str,
+            item["sample_date"].strftime("%Y-%m-%d") if item["sample_date"] else ""
+        ])
+
+    for row in ws.iter_rows(min_row=2):
+        for idx, cell in enumerate(row):
+            cell.font = data_font
+            cell.border = thin_border
+            if idx == 3:
+                cell.alignment = Alignment(horizontal="center")
+            elif idx == 4:
+                cell.number_format = '#,##0.00'
+                cell.alignment = Alignment(horizontal="right")
+
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = col[0].column_letter
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 16)
+
+    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+    wb.save(target_path)
+    return str(target_path)
+
 
 if __name__ == "__main__":
     apply_vendor_category_file()

@@ -569,7 +569,10 @@
                         Add categories for these merchants in <code style="color: var(--accent-blue);">Vendor_Category_Mapping.xlsx</code> in your project folder:
                     </div>
                 </div>
-                <button onclick="toggleUncategorizedModal()" class="btn-secondary" style="padding: 0.5rem 1rem; border-radius: 8px;">✕ Close</button>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <button onclick="exportUncategorizedExcel()" class="btn-secondary" style="border-color: var(--accent-rose); color: var(--accent-rose); padding: 0.5rem 1rem; border-radius: 8px;">📊 Export Uncategorized Excel</button>
+                    <button onclick="toggleUncategorizedModal()" class="btn-secondary" style="padding: 0.5rem 1rem; border-radius: 8px;">✕ Close</button>
+                </div>
             </div>
 
             <div style="max-height: 400px; overflow-y: auto;">
@@ -1521,6 +1524,16 @@
                 alert(`Master Excel Workbook generated successfully at:\n${data.path}`);
             } catch(e) {
                 alert('Export failed: ' + e);
+            }
+        }
+
+        async function exportUncategorizedExcel() {
+            try {
+                const res = await fetch('/api/vendors/uncategorized/export');
+                const data = await res.json();
+                alert(`Uncategorized Vendors Excel exported successfully at:\n${data.path}\n\nYou can copy new rules from this file into your main Vendor_Category_Mapping.xlsx!`);
+            } catch(e) {
+                alert('Export uncategorized failed: ' + e);
             }
         }
 
