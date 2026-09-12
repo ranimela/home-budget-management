@@ -65,8 +65,16 @@ def calculate_monthly_projections(months_ahead: int = 12) -> List[Dict[str, Any]
 
     fixed_baseline_monthly = round(fixed_recurring_total / max(len(recent_3_months), 1), 2)
 
-    # 2. Extract Active Installment Transactions
-    installments_txs = [t for t in txs if t.total_installments > 1 and t.current_installment < t.total_installments]
+    # 2. Extract Active Installment Transactions (Deduplicating multiple monthly statement records of the same installment plan)
+    latest_installments = {}
+    for t in txs:
+        if t.total_installments > 1 and t.current_installment < t.total_installments:
+            key = (t.vendor.strip().lower(), t.card_last_4, round(t.charged_amount, 2), t.total_installments)
+            t_date = t.charge_date or t.transaction_date
+            if key not in latest_installments or (latest_installments[key].charge_date or latest_installments[key].transaction_date) < t_date:
+                latest_installments[key] = t
+
+    installments_txs = list(latest_installments.values())
 
     # 3. Build 12-Month Projection Matrix
     projections = []
