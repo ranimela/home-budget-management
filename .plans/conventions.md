@@ -4,14 +4,14 @@ Lines marked EDIT are placeholders, not decisions. Fill them in yourself or let 
 Where this file differs from a global file such as ~/.gemini/GEMINI.md, this file wins for this project.
 
 ## Stack
-- Language / runtime: EDIT (e.g. Python 3.x)
-- UI (if any): EDIT (e.g. Streamlit)
-- Data store: EDIT (e.g. SQLite file / CSV / none)
-- Package manager: EDIT (e.g. pip with requirements.txt, or uv with pyproject.toml). The README setup steps follow this.
-- Dependencies: standard library first; ask before adding any new package.
+- Language / runtime: Python 3.10+ (FastAPI + Uvicorn backend)
+- UI (if any): Local Single-Page Web UI (`frontend/index.html`) using Vanilla JS, HTML/CSS, and bundled Chart.js (`frontend/chart.min.js`)
+- Data store: SQLite database (`budget.db`) via SQLModel + Excel/CSV statement inputs (`pandas`, `openpyxl`, `xlrd`) and strict read-only `Vendor_Category_Mapping.xlsx`
+- Package manager: `uv` with `pyproject.toml` and `uv.lock`. The README setup steps follow this.
+- Dependencies: standard library and existing `pyproject.toml` packages first; ask before adding any new package.
 
 ## Layout
-- `src/` application code; `tests/` tests; `.plans/` specs; `.env.example` lists variables with no values.
+- `app/` backend application code (`api/`, `core/`, `db/`, `export/`, `ingestion/`); `frontend/` static web UI; `tests/` pytest suite; `.plans/` specs and status files.
 
 ## Config & secrets
 - Settings from environment variables or a `.env` file that is git-ignored. Never hardcode keys. Never print or log them.
@@ -20,11 +20,13 @@ Where this file differs from a global file such as ~/.gemini/GEMINI.md, this fil
 - stdlib `logging` to a file with timestamp, level, traceback. No silent `except: pass`.
 - Fail loudly with a clear message when input data is missing or malformed.
 
-## Windows
+## Windows & Packaging
 - `pathlib` for all paths; no hardcoded absolute paths; PowerShell commands; quote paths with spaces.
+- Never compile or export the standalone `.exe` (`build_exe.py` / `deploy_to_dropbox.py`) unless explicitly requested by the user.
 
 ## Data safety
 - Tests use fixtures or temp copies. Never write to or delete the user's real data files in tests.
+- `Vendor_Category_Mapping.xlsx` is strictly READ-ONLY to the application and must never be overwritten or modified by code.
 
 ## Done means
-- Validator PASS, README updated if CLI args / env vars / setup changed, no secrets in the diff.
+- Validator PASS, README updated if CLI args / env vars / setup changed, no secrets or private financial statements/databases in the diff.
