@@ -1,0 +1,23 @@
+{
+  "feature": "feature-name",
+  "lane": "full",
+  "state": "prd_drafted",
+  "high_risk": false,
+  "gate_mode": "validator",
+  "validation_mode": "host",
+  "review_rounds": 0,
+  "tasks_total": 0,
+  "tasks_done": 0,
+  "current_task": null,
+  "fix_attempts": 0,
+  "validator_token": {
+    "result": null,
+    "task": null,
+    "timestamp": null
+  },
+  "blocked": {
+    "by": null,
+    "reason": null,
+    "from_state": null
+  }
+}
